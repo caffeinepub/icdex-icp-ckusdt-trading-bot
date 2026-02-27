@@ -46,7 +46,7 @@ actor {
     };
   };
 
-  // ICDex ICP/ckUSDT Canister (jgxow-pqaaa-aaaar-qahaq-cai)
+  // ICDex Persistent Interface
   type ICDex = actor {
     placeOrder : shared OrderArgs -> async OrderId;
     cancelOrder : shared { orderId : OrderId } -> async ();
@@ -54,7 +54,24 @@ actor {
     ticker : shared () -> async ?Ticker;
   };
 
+  // ICDex Local Interface with getOpenOrders
+  type ICDexWithOpenOrders = actor {
+    placeOrder : shared OrderArgs -> async OrderId;
+    cancelOrder : shared { orderId : OrderId } -> async ();
+    getLevel10 : shared () -> async Level10;
+    ticker : shared () -> async ?Ticker;
+    getOpenOrders : shared () -> async [OpenOrder];
+  };
+
   let icDex = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDex;
+
+  // Open Order type matching ICDex
+  type OpenOrder = {
+    orderId : Nat;
+    side : Side;
+    price : Nat;
+    quantity : Nat;
+  };
 
   // Public Config and Status Endpoints
   public query ({ caller }) func getBotStatus() : async Bool {
@@ -185,5 +202,11 @@ actor {
   public shared ({ caller }) func cancelOneOrderTest() : async () {
     let orderId = 0;
     await icDex.cancelOrder({ orderId });
+  };
+
+  // Fetch open orders from ICDex canister
+  public shared ({ caller }) func getOpenOrders() : async [OpenOrder] {
+    let icDexWithOpenOrders = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDexWithOpenOrders;
+    await icDexWithOpenOrders.getOpenOrders();
   };
 };

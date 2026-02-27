@@ -8,6 +8,14 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const Side = IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null });
+export const OpenOrder = IDL.Record({
+  'side' : Side,
+  'orderId' : IDL.Nat,
+  'quantity' : IDL.Nat,
+  'price' : IDL.Nat,
+});
+
 export const idlService = IDL.Service({
   'cancelOneOrderTest' : IDL.Func([], [], []),
   'getBotStatus' : IDL.Func([], [IDL.Bool], ['query']),
@@ -28,6 +36,7 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getLastMidPrice' : IDL.Func([], [IDL.Nat], ['query']),
+  'getOpenOrders' : IDL.Func([], [IDL.Vec(OpenOrder)], []),
   'setConfig' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat], [], []),
   'startBot' : IDL.Func([], [], []),
   'stopBot' : IDL.Func([], [], []),
@@ -36,6 +45,14 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const Side = IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null });
+  const OpenOrder = IDL.Record({
+    'side' : Side,
+    'orderId' : IDL.Nat,
+    'quantity' : IDL.Nat,
+    'price' : IDL.Nat,
+  });
+  
   return IDL.Service({
     'cancelOneOrderTest' : IDL.Func([], [], []),
     'getBotStatus' : IDL.Func([], [IDL.Bool], ['query']),
@@ -56,6 +73,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getLastMidPrice' : IDL.Func([], [IDL.Nat], ['query']),
+    'getOpenOrders' : IDL.Func([], [IDL.Vec(OpenOrder)], []),
     'setConfig' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat], [], []),
     'startBot' : IDL.Func([], [], []),
     'stopBot' : IDL.Func([], [], []),

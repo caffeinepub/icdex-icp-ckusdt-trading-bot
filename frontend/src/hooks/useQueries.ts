@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import type { OpenOrder } from '@/backend';
 
 const POLL_INTERVAL = 10_000; // 10 seconds
 
@@ -49,6 +50,19 @@ export function useLastGrid() {
         queryFn: async () => {
             if (!actor) return [];
             return actor.getLastGrid();
+        },
+        enabled: !!actor && !isFetching,
+        refetchInterval: POLL_INTERVAL,
+    });
+}
+
+export function useOpenOrders() {
+    const { actor, isFetching } = useActor();
+    return useQuery<OpenOrder[]>({
+        queryKey: ['openOrders'],
+        queryFn: async () => {
+            if (!actor) return [];
+            return actor.getOpenOrders();
         },
         enabled: !!actor && !isFetching,
         refetchInterval: POLL_INTERVAL,

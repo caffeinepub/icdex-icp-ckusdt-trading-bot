@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 13,
-  "summary": "Trading bot for ICP/ckUSDT pair on ICDex, written in Motoko. Version 4 in production with cancelOrder() implemented. Reverting order quantity from fixed 2 ICP back to dynamic $10 per order (10 / midPrice). Next planned feature: smart grid repositioning (AR-4, AR-9) — cancel only orders outside new grid range.",
+  "projectStateVersion": 15,
+  "summary": "Trading bot for ICP/ckUSDT pair on ICDex, written in Motoko. Version 6 in production with cancelOrder() implemented. Next step: incrementally implement smart grid repositioning (AR-4, AR-9) — starting with fetching open orders from ICDex and displaying them in the dashboard frontend.",
   "architectural_notes": [
     "Bot is a Motoko actor canister targeting ICDex pair canister jgxow-pqaaa-aaaar-qahaq-cai (ICP/ckUSDT)",
     "Grid strategy: 20 orders (10 buy + 10 sell), spread of 45 bps (0.45%), mid-price derived from best bid/ask",
@@ -36,6 +36,22 @@
       "title": "Add a Canister Balances panel to the dashboard frontend that displays the current ICP and ckUSDT balances held by the bot canister. Poll balances every 10 seconds using React Query hooks consistent with the existing useQueries.ts pattern. Format balances with appropriate decimal places (8 decimals for ICP, 6 for ckUSDT). Display a deposit instruction note reminding the user to send tokens directly to the canister principal.",
       "reqIds": [
         "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-react-query-hook-useopenorders-to-frontend-src-hooks-usequeries-ts-that-calls-the-backend-getopenorders-function-and-polls-every-10-seconds-following-the-same-pattern-as-existing-hooks-in-that-file",
+      "title": "Add a React Query hook `useOpenOrders()` to `frontend/src/hooks/useQueries.ts` that calls the backend `getOpenOrders()` function and polls every 10 seconds, following the same pattern as existing hooks in that file.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-new-openorderspanel-react-component-in-frontend-src-components-openorderspanel-tsx-that-displays-the-open-orders-fetched-from-icdex-in-a-table-with-columns-order-id-side-buy-sell-with-neon-green-red-accent-badges-consistent-with-the-terminal-theme-price-and-quantity-show-a-loading-skeleton-while-fetching-an-error-message-on-failure-and-an-empty-state-message-when-there-are-no-open-orders-add-this-panel-to-the-dashboard-grid-in-frontend-src-app-tsx",
+      "title": "Create a new `OpenOrdersPanel` React component in `frontend/src/components/OpenOrdersPanel.tsx` that displays the open orders fetched from ICDex in a table with columns: Order ID, Side (BUY/SELL with neon green / red accent badges consistent with the terminal theme), Price, and Quantity. Show a loading skeleton while fetching, an error message on failure, and an empty state message when there are no open orders. Add this panel to the dashboard grid in `frontend/src/App.tsx`.",
+      "reqIds": [
+        "REQ-16"
       ],
       "version": 1
     }
@@ -148,6 +164,20 @@
       "summary": "In the backend Motoko actor (backend/main.mo), add a new public update function `cancelOneOrderTest()` that calls `cancelOrder()` on the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' with a single hardcoded order ID (e.g., orderId = 0). This function must be completely self-contained and must not modify any existing functions including tradingLoop(). It serves only as a proof of concept that the cancelOrder() call compiles and executes without budget_exceeded errors.",
       "reqIds": [
         "REQ-13"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Fetch open orders from ICDex canister and display them in the dashboard frontend as a simple panel showing order ID, side, price, and quantity. Poll every 10 seconds via React Query. No cancellation or repositioning logic.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Add a public query function `getOpenOrders()` to the backend Motoko actor that calls the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' to fetch the canister's currently open orders and returns them as an array of records containing orderId (Nat), side (Text), price (Nat), and quantity (Nat). This function must be self-contained and must not modify any existing functions.",
+      "reqIds": [
+        "REQ-14"
       ],
       "status": "pending"
     }

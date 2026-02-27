@@ -89,6 +89,16 @@ export class ExternalBlob {
         return this;
     }
 }
+export interface OpenOrder {
+    side: Side;
+    orderId: bigint;
+    quantity: bigint;
+    price: bigint;
+}
+export enum Side {
+    buy = "buy",
+    sell = "sell"
+}
 export interface backendInterface {
     cancelOneOrderTest(): Promise<void>;
     getBotStatus(): Promise<boolean>;
@@ -99,10 +109,12 @@ export interface backendInterface {
     }>;
     getLastGrid(): Promise<Array<[string, bigint]>>;
     getLastMidPrice(): Promise<bigint>;
+    getOpenOrders(): Promise<Array<OpenOrder>>;
     setConfig(newInterval: bigint, newSpread: bigint, newOrders: bigint): Promise<void>;
     startBot(): Promise<void>;
     stopBot(): Promise<void>;
 }
+import type { OpenOrder as _OpenOrder, Side as _Side } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async cancelOneOrderTest(): Promise<void> {
@@ -179,6 +191,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getOpenOrders(): Promise<Array<OpenOrder>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getOpenOrders();
+                return from_candid_vec_n1(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getOpenOrders();
+            return from_candid_vec_n1(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async setConfig(arg0: bigint, arg1: bigint, arg2: bigint): Promise<void> {
         if (this.processError) {
             try {
@@ -221,6 +247,40 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+}
+function from_candid_OpenOrder_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OpenOrder): OpenOrder {
+    return from_candid_record_n3(_uploadFile, _downloadFile, value);
+}
+function from_candid_Side_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Side): Side {
+    return from_candid_variant_n5(_uploadFile, _downloadFile, value);
+}
+function from_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    side: _Side;
+    orderId: bigint;
+    quantity: bigint;
+    price: bigint;
+}): {
+    side: Side;
+    orderId: bigint;
+    quantity: bigint;
+    price: bigint;
+} {
+    return {
+        side: from_candid_Side_n4(_uploadFile, _downloadFile, value.side),
+        orderId: value.orderId,
+        quantity: value.quantity,
+        price: value.price
+    };
+}
+function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    buy: null;
+} | {
+    sell: null;
+}): Side {
+    return "buy" in value ? Side.buy : "sell" in value ? Side.sell : value;
+}
+function from_candid_vec_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_OpenOrder>): Array<OpenOrder> {
+    return value.map((x)=>from_candid_OpenOrder_n2(_uploadFile, _downloadFile, x));
 }
 export interface CreateActorOptions {
     agent?: Agent;

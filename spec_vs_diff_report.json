@@ -1,22 +1,25 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-27T21:52:01.056Z",
-  "summary": "The diff shows modifications to backend/main.mo and project_state.json. The backend file is truncated, so we cannot directly confirm the presence of the new cancelOneOrderTest() function. However, the existing functions (tradingLoop, startBot, stopBot, etc.) appear intact based on the visible diff. The truncation prevents full verification of REQ-13's acceptance criteria.",
-  "missing_requirements": [
+  "generatedAt": "2026-02-27T22:14:09.153Z",
+  "summary": "All three requirements (REQ-14, REQ-15, REQ-16) appear to be implemented. The backend getOpenOrders() function is added to main.mo, the useOpenOrders hook is added to useQueries.ts with 10s polling, and OpenOrdersPanel.tsx is created and integrated into App.tsx. One minor concern: the backend getOpenOrders() creates a separate ICDexWithOpenOrders actor type rather than using the existing icDex binding, but functionally it still calls the correct canister. All ACs appear satisfied.",
+  "missing_requirements": [],
+  "hallucinated_features": [
     {
-      "id": "REQ-13",
-      "requirement": "Add a new public update function cancelOneOrderTest() that calls cancelOrder() on the ICDex canister with a single hardcoded order ID",
-      "reason": "The diff of backend/main.mo is truncated and the cancelOneOrderTest() function is not visible in the shown portion. We cannot confirm the function was added.",
+      "description": "A separate ICDexWithOpenOrders actor type is defined in main.mo alongside the existing ICDex type, duplicating interface definitions rather than extending the existing ICDex binding.",
+      "reason": "The spec says the function must be self-contained and not modify existing functions, but defining a parallel actor interface type was not requested. This introduces an unused or redundant type definition not mentioned in the requirements.",
       "evidence": [
         "backend/main.mo"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.4,
+  "confidence": 0.82,
   "changed_files": [
     "backend/main.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/App.tsx",
+    "frontend/src/components/OpenOrdersPanel.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]
 }

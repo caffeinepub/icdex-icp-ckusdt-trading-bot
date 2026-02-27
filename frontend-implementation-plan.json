@@ -1,6 +1,50 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add hardcoded single order cancellation as proof of concept",
-  "requirements": []
+  "title": "Fetch and display open ICDex orders panel",
+  "requirements": [
+    {
+      "id": "REQ-15",
+      "summary": "Add a React Query hook to poll open orders from the backend every 10 seconds",
+      "acceptanceCriteria": [
+        "A `useOpenOrders` hook is added to useQueries.ts",
+        "The hook calls backend `getOpenOrders()` via the actor",
+        "Data is polled every 10 seconds (refetchInterval: 10000)",
+        "The hook exposes loading, error, and data states"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a `useOpenOrders` hook that calls backend.getOpenOrders() and polls every 10 seconds. Follow the existing pattern used by useBotStatus, useMidPrice, and useGridData hooks. The hook should return loading, error, and data states compatible with React Query, and be disabled when the actor is not available."
+        }
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "summary": "Create an OpenOrdersPanel component to display fetched ICDex orders in a terminal-themed table and wire it into the dashboard",
+      "acceptanceCriteria": [
+        "OpenOrdersPanel.tsx component exists and renders a table of open orders",
+        "Table columns are: Order ID, Side, Price, Quantity",
+        "BUY rows use neon green accent; SELL rows use red accent — consistent with the existing terminal theme",
+        "A loading skeleton is displayed while data is being fetched",
+        "An error state message is shown on fetch failure",
+        "An empty state message is shown when no open orders are returned",
+        "The panel is added to the dashboard grid in App.tsx",
+        "Data refreshes every 10 seconds via the useOpenOrders hook"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/OpenOrdersPanel.tsx",
+          "operation": "create",
+          "description": "Create a new OpenOrdersPanel component that uses the useOpenOrders hook to fetch and display open ICDex orders. Render a table with columns: Order ID, Side, Price, and Quantity. Use neon green badges for BUY orders (consistent with text-buy theme color) and red badges for SELL orders (consistent with text-sell theme color). Display loading skeletons while fetching (similar to GridPreviewTable), show an error message on fetch failure, and show an empty state message when no orders are returned. Style the panel consistently with the terminal theme using the same card/border styling as BotControlPanel and ConfigurationPanel."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Import the OpenOrdersPanel component and add it to the dashboard grid layout. Position it below the existing panels (BotControlPanel, ConfigurationPanel, MarketDataPanel, GridPreviewTable) in the responsive grid to maintain visual balance."
+        }
+      ]
+    }
+  ]
 }

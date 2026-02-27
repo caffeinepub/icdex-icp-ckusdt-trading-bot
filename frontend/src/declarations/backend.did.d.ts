@@ -10,6 +10,14 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface OpenOrder {
+  'side' : Side,
+  'orderId' : bigint,
+  'quantity' : bigint,
+  'price' : bigint,
+}
+export type Side = { 'buy' : null } |
+  { 'sell' : null };
 export interface _SERVICE {
   'cancelOneOrderTest' : ActorMethod<[], undefined>,
   'getBotStatus' : ActorMethod<[], boolean>,
@@ -19,6 +27,7 @@ export interface _SERVICE {
   >,
   'getLastGrid' : ActorMethod<[], Array<[string, bigint]>>,
   'getLastMidPrice' : ActorMethod<[], bigint>,
+  'getOpenOrders' : ActorMethod<[], Array<OpenOrder>>,
   'setConfig' : ActorMethod<[bigint, bigint, bigint], undefined>,
   'startBot' : ActorMethod<[], undefined>,
   'stopBot' : ActorMethod<[], undefined>,

@@ -1,42 +1,82 @@
 {
   "kind": "build_request",
-  "title": "Add hardcoded single order cancellation as proof of concept",
+  "title": "Fetch and display open ICDex orders panel",
+  "projectName": "ICDex Grid Bot",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-13",
-      "text": "In the backend Motoko actor (backend/main.mo), add a new public update function `cancelOneOrderTest()` that calls `cancelOrder()` on the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' with a single hardcoded order ID (e.g., orderId = 0). This function must be completely self-contained and must not modify any existing functions including tradingLoop(). It serves only as a proof of concept that the cancelOrder() call compiles and executes without budget_exceeded errors.",
+      "id": "REQ-14",
+      "text": "Add a public query function `getOpenOrders()` to the backend Motoko actor that calls the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' to fetch the canister's currently open orders and returns them as an array of records containing orderId (Nat), side (Text), price (Nat), and quantity (Nat). This function must be self-contained and must not modify any existing functions.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-recent"
+          "msg-latest"
         ],
         "quotes": [
-          "implemente apenas o cancelamento seletivo de uma única ordem hardcoded",
-          "Sim"
+          "Apenas buscar as ordens e exibir"
         ]
       },
       "acceptanceCriteria": [
-        "A new public update function `cancelOneOrderTest()` exists in backend/main.mo",
-        "The function calls cancelOrder() on the ICDex canister with a single hardcoded order ID",
-        "No existing functions (tradingLoop, startBot, stopBot, etc.) are modified",
-        "The canister compiles successfully without budget_exceeded errors",
-        "The function can be called via dfx canister call without runtime errors"
+        "A public function `getOpenOrders()` exists in backend/main.mo",
+        "The function calls the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' to retrieve open orders",
+        "The function returns an array of records with fields: orderId (Nat), side (Text), price (Nat), quantity (Nat)",
+        "No existing functions (tradingLoop, startBot, stopBot, etc.) are modified"
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "text": "Add a React Query hook `useOpenOrders()` to `frontend/src/hooks/useQueries.ts` that calls the backend `getOpenOrders()` function and polls every 10 seconds, following the same pattern as existing hooks in that file.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "Apenas buscar as ordens e exibir"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A `useOpenOrders` hook is added to useQueries.ts",
+        "The hook calls backend `getOpenOrders()` via the actor",
+        "Data is polled every 10 seconds (refetchInterval: 10000)",
+        "The hook exposes loading, error, and data states"
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "text": "Create a new `OpenOrdersPanel` React component in `frontend/src/components/OpenOrdersPanel.tsx` that displays the open orders fetched from ICDex in a table with columns: Order ID, Side (BUY/SELL with neon green / red accent badges consistent with the terminal theme), Price, and Quantity. Show a loading skeleton while fetching, an error message on failure, and an empty state message when there are no open orders. Add this panel to the dashboard grid in `frontend/src/App.tsx`.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "Apenas buscar as ordens e exibir"
+        ]
+      },
+      "acceptanceCriteria": [
+        "OpenOrdersPanel.tsx component exists and renders a table of open orders",
+        "Table columns are: Order ID, Side, Price, Quantity",
+        "BUY rows use neon green accent; SELL rows use red accent — consistent with the existing terminal theme",
+        "A loading skeleton is displayed while data is being fetched",
+        "An error state message is shown on fetch failure",
+        "An empty state message is shown when no open orders are returned",
+        "The panel is added to the dashboard grid in App.tsx",
+        "Data refreshes every 10 seconds via the useOpenOrders hook"
       ]
     }
   ],
   "constraints": [
-    "Do not modify any existing functions in backend/main.mo",
-    "Do not touch any frontend files",
-    "Keep the change to the absolute minimum: only add the new cancelOneOrderTest() function",
-    "Do not add any comparison logic, grid calculations, or loop iterations"
+    "Do not modify tradingLoop(), startBot(), stopBot(), or any other existing backend functions",
+    "Do not implement any cancellation or grid repositioning logic",
+    "Frontend immutable paths (useInternetIdentity.ts, useActor.ts, main.tsx, components/ui) must not be modified",
+    "New React Query hook must follow the existing pattern in frontend/src/hooks/useQueries.ts"
   ],
   "nonGoals": [
-    "Smart grid repositioning logic",
-    "Fetching open orders from ICDex",
-    "Comparing open orders against new grid levels",
-    "Cancelling multiple orders",
-    "Any frontend changes"
+    "Cancelling open orders",
+    "Smart grid repositioning",
+    "Comparing open orders against the computed grid",
+    "Any modification to the trading loop cycle"
   ],
   "imageRequirements": {
     "required": [],

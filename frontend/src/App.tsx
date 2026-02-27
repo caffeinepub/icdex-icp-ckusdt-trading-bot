@@ -3,6 +3,7 @@ import { BotControlPanel } from './components/BotControlPanel';
 import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { MarketDataPanel } from './components/MarketDataPanel';
 import { GridPreviewTable } from './components/GridPreviewTable';
+import { OpenOrdersPanel } from './components/OpenOrdersPanel';
 
 function Header() {
     return (
@@ -109,9 +110,10 @@ export default function App() {
                     <MarketDataPanel />
                 </div>
 
-                {/* Bottom row: Grid Preview (full width) */}
-                <div className="grid grid-cols-1">
+                {/* Middle row: Grid Preview + Open Orders */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                     <GridPreviewTable />
+                    <OpenOrdersPanel />
                 </div>
             </main>
 
