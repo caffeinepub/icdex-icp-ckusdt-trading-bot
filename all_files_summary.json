@@ -1,0 +1,19 @@
+{
+  "backend/main.mo": "Motoko actor implementing an ICDex ICP/ckUSDT grid trading bot with configurable interval, spread, and order count, using recurring timers to run a trading loop that fetches order book data and places buy/sell grid orders.",
+  "feature_evidence.json": "Empty feature evidence report with no recorded features.",
+  "frontend-file-summaries.txt": "JSON file containing one-line summaries of each frontend source file, describing their roles in the trading bot dashboard UI.",
+  "frontend/index.css": "Tailwind base stylesheet defining OKLCH CSS custom properties for light and dark themes including background, foreground, card, border, and chart color tokens.",
+  "frontend/index.html": "Minimal HTML entry point that mounts the React app into a root div and loads the main TypeScript module.",
+  "frontend/src/App.tsx": "Root React component rendering a sticky header, footer, and a responsive dashboard layout composing BotControlPanel, ConfigurationPanel, MarketDataPanel, and GridPreviewTable.",
+  "frontend/src/components/BotControlPanel.tsx": "React panel component displaying bot running/stopped status with animated indicator and Start/Stop buttons that call the corresponding backend mutations.",
+  "frontend/src/components/ConfigurationPanel.tsx": "React form panel for editing and saving bot configuration fields (intervalSeconds, spreadBps, numOrders) with client-side validation and success/error feedback.",
+  "frontend/src/components/GridPreviewTable.tsx": "Displays a sorted table of the bot's current grid orders (buys and sells) with badges showing order counts, loading skeletons, and a refresh button.",
+  "frontend/src/components/MarketDataPanel.tsx": "Shows the latest mid price for the ICP/ckUSDT pair along with exchange info, with loading state, refresh button, and last-updated timestamp.",
+  "frontend/src/hooks/useActor.ts": "Creates and caches an ICP backend actor (authenticated or anonymous) via React Query, invalidating dependent queries whenever the actor changes.",
+  "frontend/src/hooks/useInternetIdentity.ts": "Provides an Internet Identity authentication context with login/logout, status tracking, and an AuthClient wrapper, exposed via a React context and hook.",
+  "frontend/src/hooks/useQueries.ts": "Defines React Query hooks for polling bot status, config, mid price, and grid data, plus mutations for starting/stopping the bot and updating config.",
+  "frontend/src/index.css": "Global stylesheet defining a terminal-dark OKLCH color theme with Tailwind base/utilities, custom semantic tokens for buy/sell states, and scrollbar styling.",
+  "frontend/src/main.tsx": "Application entry point that mounts the React app wrapped with QueryClientProvider and InternetIdentityProvider.",
+  "frontend/tailwind.config.js": "Tailwind CSS configuration for the frontend, defining a dark terminal-inspired theme with custom colors (using oklch), fonts (JetBrains Mono, Inter), border radii, box shadows, and keyframe animations. Includes plugins for typography, container queries, and animate.",
+  "project_state.json": "Project state tracking file describing the ICP/ckUSDT trading bot built in Motoko, its architectural decisions (grid strategy, order sizing, timer loop), existing frontend/backend features, and current development phase focused on real order execution."
+}

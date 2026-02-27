@@ -1,0 +1,10 @@
+{
+  "frontend/src/index.css": "Global styles with a dark terminal-inspired OKLCH color system, JetBrains Mono font, custom utility classes for buy/sell colors, glow effects, and scrollbar styling.",
+  "frontend/tailwind.config.js": "Extended Tailwind config with JetBrains Mono font family, terminal-themed color tokens (buy/sell/neutral/running/stopped), custom shadows (terminal, buy-glow, sell-glow), and pulse/blink animations.",
+  "frontend/src/hooks/useQueries.ts": "React Query hooks for all backend operations — polling queries for botStatus, config, lastMidPrice, and lastGrid (10s interval), plus mutations for startBot, stopBot, and setConfig.",
+  "frontend/src/components/BotControlPanel.tsx": "Card panel showing bot running/stopped status with animated indicator, Start/Stop buttons with loading states, error display, and canister ID info.",
+  "frontend/src/components/ConfigurationPanel.tsx": "Card panel with a form for intervalSeconds, spreadBps, and numOrders fields, validation, and a Save Config button that calls setConfig() mutation with success/error feedback.",
+  "frontend/src/components/MarketDataPanel.tsx": "Card panel displaying the last computed mid-price from the backend, pair/exchange info, last-updated timestamp, and a manual refresh button.",
+  "frontend/src/components/GridPreviewTable.tsx": "Card panel with a scrollable table of all grid orders from getLastGrid(), sorted sells above buys, with color-coded BUY (green) and SELL (red) rows, badges, and empty state.",
+  "frontend/src/App.tsx": "Main app layout with sticky header, validation-mode status bar, responsive 3-column dashboard grid (BotControlPanel, ConfigurationPanel, MarketDataPanel) plus full-width GridPreviewTable, and branded footer."
+}

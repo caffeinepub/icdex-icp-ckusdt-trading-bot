@@ -1,0 +1,44 @@
+{
+  "kind": "build_request",
+  "title": "Activate real placeOrder() calls with 2 ICP fixed order size",
+  "projectName": "ICDex Grid Bot",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-10",
+      "text": "In the backend trading loop (tradingLoop()), replace all Debug.print stubs for order placement with actual placeOrder() calls to the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai'. Each order (both BUY and SELL) must use a fixed quantity of 2 ICP (represented as 200_000_000 e8s). Place all orders in the newly computed grid. Do not implement cancelOrder or grid repositioning in this step.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "2 icps. .. desculpe",
+          "Ativar as chamadas reais ao placeOrder() no ICDex com ordens de 2 ICP fixos por ordem (BUY e SELL), sem mexer no reposicionamento ainda"
+        ]
+      },
+      "acceptanceCriteria": [
+        "tradingLoop() calls placeOrder() on the ICDex canister for each computed grid level instead of Debug.print",
+        "Each order uses a fixed quantity of 2 ICP (200_000_000 e8s) for both BUY and SELL sides",
+        "cancelOrder() and grid repositioning logic are NOT included in this change",
+        "The bot continues to start/stop correctly via startBot() and stopBot()",
+        "The grid is still computed using the existing spreadBps and numOrders configuration"
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not implement cancelOrder() or smart grid repositioning in this step",
+    "Do not change the existing frontend components or polling hooks",
+    "Order quantity must be exactly 2 ICP (200_000_000 e8s) — fixed, not calculated from price"
+  ],
+  "nonGoals": [
+    "Dynamic order size calculation based on USD value",
+    "Cancellation of existing open orders",
+    "Smart grid repositioning comparing open orders vs. new grid",
+    "Any frontend changes"
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}
