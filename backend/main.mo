@@ -29,16 +29,6 @@ actor {
     timestamp : Nat;
   };
 
-  // ICDex ICP/ckUSDT Canister (jgxow-pqaaa-aaaar-qahaq-cai)
-  type ICDex = actor {
-    placeOrder : shared OrderArgs -> async OrderId;
-    cancelOrder : shared { orderId : OrderId } -> async ();
-    getLevel10 : shared () -> async Level10;
-    ticker : shared () -> async ?Ticker;
-  };
-
-  let icDex = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDex;
-
   // Persistent Configuration State
   var intervalSeconds : Nat = 60;
   var spreadBps : Nat = 45;
@@ -53,6 +43,16 @@ actor {
       Nat.compare(a.1, b.1);
     };
   };
+
+  // ICDex ICP/ckUSDT Canister (jgxow-pqaaa-aaaar-qahaq-cai)
+  type ICDex = actor {
+    placeOrder : shared OrderArgs -> async OrderId;
+    cancelOrder : shared { orderId : OrderId } -> async ();
+    getLevel10 : shared () -> async Level10;
+    ticker : shared () -> async ?Ticker;
+  };
+
+  let icDex = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDex;
 
   // Public Config and Status Endpoints
   public query ({ caller }) func getBotStatus() : async Bool {

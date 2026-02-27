@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-27T20:49:36.602Z",
+  "generatedAt": "2026-02-27T21:06:01.362Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,8 +11,8 @@
     "implemented": 0,
     "items": [
       {
-        "id": "REQ-10",
-        "summary": "In the backend trading loop (tradingLoop()), replace all Debug.print stubs for order placement with actual placeOrder() calls to the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai'. Each order (both BUY and SELL) must use a fixed quantity of 2 ICP (represented as 200_000_000 e8s). Place all orders in the newly computed grid. Do not implement cancelOrder or grid repositioning in this step.",
+        "id": "REQ-11",
+        "summary": "In the backend trading loop (tradingLoop()), before placing new grid orders each cycle, fetch all currently open orders from the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' and call cancelOrder() on each of them. This ensures no stale orders accumulate across cycles. Do not implement smart grid repositioning or order comparison logic in this step — cancel all open orders unconditionally before placing the new grid.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
@@ -22,7 +22,6 @@
   "changedFiles": [
     "backend/main.mo",
     "build-request.json",
-    "build-template/README.md",
     "feature_evidence.json",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",

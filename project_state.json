@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 7,
-  "summary": "Trading bot for ICP/ckUSDT pair on ICDex, written in Motoko. Moving to real order execution phase: real placeOrder calls will be activated with fixed order size of 2 ICP per order (both BUY and SELL sides). cancelOrder and smart grid repositioning will be implemented in a subsequent step.",
+  "projectStateVersion": 9,
+  "summary": "Trading bot for ICP/ckUSDT pair on ICDex, written in Motoko. Version 3 in production with real placeOrder calls using fixed 2 ICP per order. Now implementing cancelOrder() in the trading loop (AR-2): each cycle will fetch open orders from ICDex and cancel them before placing new grid orders.",
   "architectural_notes": [
     "Bot is a Motoko actor canister targeting ICDex pair canister jgxow-pqaaa-aaaar-qahaq-cai (ICP/ckUSDT)",
     "Grid strategy: 20 orders (10 buy + 10 sell), spread of 45 bps (0.45%), mid-price derived from best bid/ask",
@@ -116,6 +116,14 @@
       "summary": "In the backend trading loop (tradingLoop()), replace all Debug.print stubs for order placement with actual placeOrder() calls to the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai'. Each order (both BUY and SELL) must use a fixed quantity of 2 ICP (represented as 200_000_000 e8s). Place all orders in the newly computed grid. Do not implement cancelOrder or grid repositioning in this step.",
       "reqIds": [
         "REQ-10"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "In the backend trading loop (tradingLoop()), before placing new grid orders each cycle, fetch all currently open orders from the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' and call cancelOrder() on each of them. This ensures no stale orders accumulate across cycles. Do not implement smart grid repositioning or order comparison logic in this step — cancel all open orders unconditionally before placing the new grid.",
+      "reqIds": [
+        "REQ-11"
       ],
       "status": "pending"
     }

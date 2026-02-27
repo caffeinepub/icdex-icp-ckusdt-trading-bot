@@ -1,6 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Activate real placeOrder() calls with 2 ICP fixed order size",
+  "title": "Activate cancelOrder() in the trading loop (AR-2)",
   "requirements": []
 }

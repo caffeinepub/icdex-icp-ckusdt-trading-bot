@@ -1,12 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Replace the Debug.print stubs in the backend trading loop with real `placeOrder()` calls to the ICDex canister, using a fixed order size of 2 ICP per order.
+**Goal:** Activate order cancellation in the backend trading loop so that all open orders are cancelled before new grid orders are placed each cycle, preventing order accumulation.
 
 **Planned changes:**
-- In `tradingLoop()`, replace all `Debug.print` stub calls for order placement with actual `placeOrder()` calls targeting the ICDex canister at `jgxow-pqaaa-aaaar-qahaq-cai`
-- Each BUY and SELL order must use a fixed quantity of 2 ICP (200_000_000 e8s)
-- Grid computation continues to use existing `spreadBps` and `numOrders` configuration
-- No changes to `cancelOrder()`, grid repositioning, or any frontend code
+- At the start of each `tradingLoop()` cycle, query the ICDex canister (`jgxow-pqaaa-aaaar-qahaq-cai`) for all currently open orders belonging to the canister.
+- Call `cancelOrder()` on every open order found, unconditionally, before any new `placeOrder()` calls are made.
+- If no open orders exist, skip the cancellation step gracefully and continue with grid order placement.
+- Handle errors from `cancelOrder()` by logging them without aborting the rest of the trading cycle.
+- Leave all existing `placeOrder()` logic, order sizing (fixed 2 ICP / 200_000_000 e8s), public API functions, and frontend files unchanged.
 
-**User-visible outcome:** The grid bot now places real orders on the ICDex canister when the trading loop runs, with each grid level order sized at exactly 2 ICP for both buy and sell sides.
+**User-visible outcome:** The bot no longer accumulates stale orders across cycles; each trading cycle starts clean by cancelling all previous open orders before placing a fresh grid, making it safe to run on real assets.
