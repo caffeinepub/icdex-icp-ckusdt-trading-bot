@@ -1,42 +1,4 @@
 {
   "kind": "feature_evidence_report",
-  "features": [
-    {
-      "featureId": "feature-add-a-react-query-hook-useopenorders-to-frontend-src-hooks-usequeries-ts-that-calls-the-backend-getopenorders-function-and-polls-every-10-seconds-following-the-same-pattern-as-existing-hooks-in-that-file",
-      "featureTitle": "Add a React Query hook `useOpenOrders()` to `frontend/src/hooks/useQueries.ts` that calls the backend `getOpenOrders()` function and polls every 10 seconds, following the same pattern as existing hooks in that file.",
-      "files": [
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-15"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-create-a-new-openorderspanel-react-component-in-frontend-src-components-openorderspanel-tsx-that-displays-the-open-orders-fetched-from-icdex-in-a-table-with-columns-order-id-side-buy-sell-with-neon-green-red-accent-badges-consistent-with-the-terminal-theme-price-and-quantity-show-a-loading-skeleton-while-fetching-an-error-message-on-failure-and-an-empty-state-message-when-there-are-no-open-orders-add-this-panel-to-the-dashboard-grid-in-frontend-src-app-tsx",
-      "featureTitle": "Create a new `OpenOrdersPanel` React component in `frontend/src/components/OpenOrdersPanel.tsx` that displays the open orders fetched from ICDex in a table with columns: Order ID, Side (BUY/SELL with neon green / red accent badges consistent with the terminal theme), Price, and Quantity. Show a loading skeleton while fetching, an error message on failure, and an empty state message when there are no open orders. Add this panel to the dashboard grid in `frontend/src/App.tsx`.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/OpenOrdersPanel.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-16"
-      ],
-      "confidence": "high"
-    }
-  ]
+  "features": []
 }

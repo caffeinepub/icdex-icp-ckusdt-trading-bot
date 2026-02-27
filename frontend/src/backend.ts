@@ -100,6 +100,7 @@ export enum Side {
     sell = "sell"
 }
 export interface backendInterface {
+    cancelAllOpenOrders(): Promise<void>;
     cancelOneOrderTest(): Promise<void>;
     getBotStatus(): Promise<boolean>;
     getConfig(): Promise<{
@@ -117,6 +118,20 @@ export interface backendInterface {
 import type { OpenOrder as _OpenOrder, Side as _Side } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
+    async cancelAllOpenOrders(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.cancelAllOpenOrders();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.cancelAllOpenOrders();
+            return result;
+        }
+    }
     async cancelOneOrderTest(): Promise<void> {
         if (this.processError) {
             try {

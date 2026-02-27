@@ -145,10 +145,11 @@ actor {
     quantityInt.toNat();
   };
 
-  // Trading Loop
+  // Trading Loop with Full Order Cancellation
   func tradingLoop() : async () {
+    // Fetch open orders and cancel all before grid calculation
+    await cancelAllOpenOrders();
     let level10 = await icDex.getLevel10();
-
     let bestBid = level10.bids[0].price;
     let bestAsk = level10.asks[0].price;
     let midPrice = (bestBid + bestAsk) / 2 : Nat;
@@ -208,5 +209,14 @@ actor {
   public shared ({ caller }) func getOpenOrders() : async [OpenOrder] {
     let icDexWithOpenOrders = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDexWithOpenOrders;
     await icDexWithOpenOrders.getOpenOrders();
+  };
+
+  // Cancel all open orders
+  public shared ({ caller }) func cancelAllOpenOrders() : async () {
+    let openOrders = await getOpenOrders();
+    let icDexWithOpenOrders = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDexWithOpenOrders;
+    for (order in openOrders.values()) {
+      await icDexWithOpenOrders.cancelOrder({ orderId = order.orderId });
+    };
   };
 };

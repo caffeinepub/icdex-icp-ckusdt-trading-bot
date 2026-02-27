@@ -1,12 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Add a read-only open orders panel to the ICDex Grid Bot dashboard that fetches and displays the bot's currently open orders from the ICDex canister.
+**Goal:** Modify the backend trading loop so that all open orders are unconditionally cancelled before placing new grid orders on every cycle.
 
 **Planned changes:**
-- Add a `getOpenOrders()` public query function to `backend/main.mo` that calls the ICDex canister at `jgxow-pqaaa-aaaar-qahaq-cai` and returns an array of records with fields: orderId (Nat), side (Text), price (Nat), and quantity (Nat)
-- Add a `useOpenOrders()` React Query hook to `frontend/src/hooks/useQueries.ts` that calls `getOpenOrders()` and polls every 10 seconds
-- Create a new `OpenOrdersPanel.tsx` component that displays open orders in a table with columns: Order ID, Side, Price, and Quantity; BUY side uses neon green badges and SELL side uses red badges, consistent with the terminal theme; includes loading skeleton, error state, and empty state
-- Add the `OpenOrdersPanel` to the dashboard grid in `frontend/src/App.tsx`
+- In `tradingLoop()` (`backend/main.mo`), fetch all open orders via `getOpenOrders()` at the start of each cycle
+- Call `cancelOrder()` on every open order before placing any new orders
+- Ensure new grid orders are only placed after all cancellations are complete
+- Preserve the existing flow: fetch mid-price → compute grid → cancel all → place all
+- Preserve the dynamic order quantity calculation (`quantity = 10 / midPrice`)
 
-**User-visible outcome:** The dashboard shows a live-updating panel listing all currently open ICDex orders, refreshing every 10 seconds, with color-coded BUY/SELL indicators.
+**User-visible outcome:** The bot no longer accumulates stale orders across cycles; every cycle starts clean with a full cancel-all before repositioning the grid.

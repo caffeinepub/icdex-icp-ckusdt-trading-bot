@@ -18,6 +18,7 @@ export enum Side {
     sell = "sell"
 }
 export interface backendInterface {
+    cancelAllOpenOrders(): Promise<void>;
     cancelOneOrderTest(): Promise<void>;
     getBotStatus(): Promise<boolean>;
     getConfig(): Promise<{

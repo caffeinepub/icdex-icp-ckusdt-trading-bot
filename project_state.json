@@ -1,14 +1,14 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 15,
-  "summary": "Trading bot for ICP/ckUSDT pair on ICDex, written in Motoko. Version 6 in production with cancelOrder() implemented. Next step: incrementally implement smart grid repositioning (AR-4, AR-9) — starting with fetching open orders from ICDex and displaying them in the dashboard frontend.",
+  "projectStateVersion": 17,
+  "summary": "Trading bot for ICP/ckUSDT pair on ICDex, written in Motoko. Version 7 in production with open orders panel in dashboard. Next step: implement cancel-all-then-reposition approach in tradingLoop() — cancel all open orders before placing new grid orders each cycle (AR-4/AR-9, simplified approach).",
   "architectural_notes": [
     "Bot is a Motoko actor canister targeting ICDex pair canister jgxow-pqaaa-aaaar-qahaq-cai (ICP/ckUSDT)",
     "Grid strategy: 20 orders (10 buy + 10 sell), spread of 45 bps (0.45%), mid-price derived from best bid/ask",
     "Trading loop runs every 60 seconds using Timer.recurringTimer",
     "Tokens are deposited directly into the bot canister (no external wallet allowance needed)",
-    "Grid repositioning cancels only orders outside the new grid range (not all open orders) to minimize fees",
-    "Order quantity is dynamic: 10 / midPrice (representing $10 per order in ICP terms), not fixed at 2 ICP"
+    "Order quantity is dynamic: 10 / midPrice (representing $10 per order in ICP terms), not fixed at 2 ICP",
+    "Grid repositioning strategy: cancel ALL open orders before placing new grid (not selective) — simpler, avoids budget_exceeded issues with order comparison logic"
   ],
   "known_issues": [
     "Smart grid repositioning (AR-4/AR-9) builds repeatedly fail with budget_exceeded; attempting bottom-up incremental implementation"
@@ -178,6 +178,14 @@
       "summary": "Add a public query function `getOpenOrders()` to the backend Motoko actor that calls the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' to fetch the canister's currently open orders and returns them as an array of records containing orderId (Nat), side (Text), price (Nat), and quantity (Nat). This function must be self-contained and must not modify any existing functions.",
       "reqIds": [
         "REQ-14"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "In the backend trading loop (tradingLoop() in backend/main.mo), before placing new grid orders each cycle, unconditionally cancel ALL currently open orders by calling the ICDex canister's cancelOrder() for each open order fetched via getOpenOrders(). Only after all cancellations are complete should the new grid orders be placed. No comparison logic, no selective cancellation — cancel every open order on every cycle before repositioning.",
+      "reqIds": [
+        "REQ-17"
       ],
       "status": "pending"
     }

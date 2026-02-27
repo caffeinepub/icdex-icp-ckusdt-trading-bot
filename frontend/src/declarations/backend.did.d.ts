@@ -19,6 +19,7 @@ export interface OpenOrder {
 export type Side = { 'buy' : null } |
   { 'sell' : null };
 export interface _SERVICE {
+  'cancelAllOpenOrders' : ActorMethod<[], undefined>,
   'cancelOneOrderTest' : ActorMethod<[], undefined>,
   'getBotStatus' : ActorMethod<[], boolean>,
   'getConfig' : ActorMethod<

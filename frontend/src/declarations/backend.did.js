@@ -17,6 +17,7 @@ export const OpenOrder = IDL.Record({
 });
 
 export const idlService = IDL.Service({
+  'cancelAllOpenOrders' : IDL.Func([], [], []),
   'cancelOneOrderTest' : IDL.Func([], [], []),
   'getBotStatus' : IDL.Func([], [IDL.Bool], ['query']),
   'getConfig' : IDL.Func(
@@ -54,6 +55,7 @@ export const idlFactory = ({ IDL }) => {
   });
   
   return IDL.Service({
+    'cancelAllOpenOrders' : IDL.Func([], [], []),
     'cancelOneOrderTest' : IDL.Func([], [], []),
     'getBotStatus' : IDL.Func([], [IDL.Bool], ['query']),
     'getConfig' : IDL.Func(
