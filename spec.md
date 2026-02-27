@@ -1,13 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Activate order cancellation in the backend trading loop so that all open orders are cancelled before new grid orders are placed each cycle, preventing order accumulation.
+**Goal:** Revert the order quantity calculation in the backend trading loop from a fixed 2 ICP (200_000_000 e8s) back to the original dynamic $10 per order formula.
 
 **Planned changes:**
-- At the start of each `tradingLoop()` cycle, query the ICDex canister (`jgxow-pqaaa-aaaar-qahaq-cai`) for all currently open orders belonging to the canister.
-- Call `cancelOrder()` on every open order found, unconditionally, before any new `placeOrder()` calls are made.
-- If no open orders exist, skip the cancellation step gracefully and continue with grid order placement.
-- Handle errors from `cancelOrder()` by logging them without aborting the rest of the trading cycle.
-- Leave all existing `placeOrder()` logic, order sizing (fixed 2 ICP / 200_000_000 e8s), public API functions, and frontend files unchanged.
+- In `tradingLoop()`, replace the hardcoded quantity of 200_000_000 e8s with the dynamic formula: `quantity = 10 / midPrice` (representing $10 worth of ICP at the current mid-price).
+- Apply this dynamic quantity to both BUY and SELL grid orders.
 
-**User-visible outcome:** The bot no longer accumulates stale orders across cycles; each trading cycle starts clean by cancelling all previous open orders before placing a fresh grid, making it safe to run on real assets.
+**User-visible outcome:** The grid bot places orders sized at approximately $10 worth of ICP each, based on the current mid-price, matching the original default behavior.

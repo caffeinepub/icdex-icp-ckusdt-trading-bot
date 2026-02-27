@@ -1,6 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Activate cancelOrder() in the trading loop (AR-2)",
+  "title": "Revert order quantity to dynamic $10 per order default",
   "requirements": []
 }

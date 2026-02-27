@@ -3,6 +3,8 @@ import Nat "mo:core/Nat";
 import Order "mo:core/Order";
 import Timer "mo:core/Timer";
 import Array "mo:core/Array";
+import Float "mo:core/Float";
+import Int "mo:core/Int";
 
 actor {
   // ICDex Types
@@ -116,6 +118,16 @@ actor {
     botRunning := false;
   };
 
+  // Calculate $10 in e8s at current midPrice
+  func calculateOrderQuantity(price : Nat) : Nat {
+    let tenDollarsCents = 1_000_000; // 10 USD in cents
+    let priceFloat = price.toInt().toFloat();
+    let quantityInE8s = tenDollarsCents.toFloat() / priceFloat;
+    let quantityInt = quantityInE8s.toInt();
+    if (quantityInt < 0) { return 0 };
+    quantityInt.toNat();
+  };
+
   // Trading Loop
   func tradingLoop() : async () {
     let level10 = await icDex.getLevel10();
@@ -149,14 +161,19 @@ actor {
     let sellArray = sellGrid.toArray();
     lastGridData := (buyArray.concat(sellArray)).sort();
 
-    await placeOrders(buyArray.concat(sellArray));
+    await placeOrders(buyArray.concat(sellArray), midPrice);
   };
 
-  func placeOrders(grid : [(Side, Nat)]) : async () {
+  // Place Orders with Dynamic Quantity Calculation
+  func placeOrders(grid : [(Side, Nat)], price : Nat) : async () {
+    let quantity = calculateOrderQuantity(price);
+    if (quantity == 0) {
+      Runtime.trap("Order quantity too small at current price");
+    };
     for ((side, price) in grid.values()) {
       let orderArgs : OrderArgs = {
         price;
-        quantity = 200_000_000;
+        quantity;
         side;
         orderType = #limit;
       };

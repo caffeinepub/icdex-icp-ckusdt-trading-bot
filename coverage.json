@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-27T21:06:01.362Z",
+  "generatedAt": "2026-02-27T21:21:11.526Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,8 +11,8 @@
     "implemented": 0,
     "items": [
       {
-        "id": "REQ-11",
-        "summary": "In the backend trading loop (tradingLoop()), before placing new grid orders each cycle, fetch all currently open orders from the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' and call cancelOrder() on each of them. This ensures no stale orders accumulate across cycles. Do not implement smart grid repositioning or order comparison logic in this step — cancel all open orders unconditionally before placing the new grid.",
+        "id": "REQ-12",
+        "summary": "In the backend trading loop (tradingLoop()), revert the order quantity calculation from the fixed 2 ICP (200_000_000 e8s) back to the original dynamic $10 per order formula: quantity = 10 / midPrice (in ICP terms, using the current mid-price). This dynamic calculation must be used as the default for all grid orders (both BUY and SELL sides) going forward.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
