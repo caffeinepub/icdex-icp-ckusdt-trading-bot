@@ -1,6 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Revert order quantity to dynamic $10 per order default",
+  "title": "Add hardcoded single order cancellation as proof of concept",
   "requirements": []
 }

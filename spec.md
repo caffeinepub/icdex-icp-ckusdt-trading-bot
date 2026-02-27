@@ -1,10 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Revert the order quantity calculation in the backend trading loop from a fixed 2 ICP (200_000_000 e8s) back to the original dynamic $10 per order formula.
+**Goal:** Add a minimal proof-of-concept function to the backend Motoko actor that demonstrates a single hardcoded order cancellation on the ICDex canister.
 
 **Planned changes:**
-- In `tradingLoop()`, replace the hardcoded quantity of 200_000_000 e8s with the dynamic formula: `quantity = 10 / midPrice` (representing $10 worth of ICP at the current mid-price).
-- Apply this dynamic quantity to both BUY and SELL grid orders.
+- Add a new public update function `cancelOneOrderTest()` in `backend/main.mo` that calls `cancelOrder()` on the ICDex canister (`jgxow-pqaaa-aaaar-qahaq-cai`) with a hardcoded order ID (e.g., `0`)
+- No existing functions are modified; no frontend files are touched
 
-**User-visible outcome:** The grid bot places orders sized at approximately $10 worth of ICP each, based on the current mid-price, matching the original default behavior.
+**User-visible outcome:** The developer can call `cancelOneOrderTest()` via `dfx canister call` to verify that the `cancelOrder()` call compiles and executes successfully without budget_exceeded errors.

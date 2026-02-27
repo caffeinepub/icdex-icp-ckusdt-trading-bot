@@ -8,6 +8,7 @@ export interface None {
 }
 export type Option<T> = Some<T> | None;
 export interface backendInterface {
+    cancelOneOrderTest(): Promise<void>;
     getBotStatus(): Promise<boolean>;
     getConfig(): Promise<{
         intervalSeconds: bigint;

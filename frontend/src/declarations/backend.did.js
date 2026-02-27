@@ -9,6 +9,7 @@
 import { IDL } from '@icp-sdk/core/candid';
 
 export const idlService = IDL.Service({
+  'cancelOneOrderTest' : IDL.Func([], [], []),
   'getBotStatus' : IDL.Func([], [IDL.Bool], ['query']),
   'getConfig' : IDL.Func(
       [],
@@ -36,6 +37,7 @@ export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
   return IDL.Service({
+    'cancelOneOrderTest' : IDL.Func([], [], []),
     'getBotStatus' : IDL.Func([], [IDL.Bool], ['query']),
     'getConfig' : IDL.Func(
         [],

@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-27T21:21:11.526Z",
+  "generatedAt": "2026-02-27T21:52:01.059Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,8 +11,8 @@
     "implemented": 0,
     "items": [
       {
-        "id": "REQ-12",
-        "summary": "In the backend trading loop (tradingLoop()), revert the order quantity calculation from the fixed 2 ICP (200_000_000 e8s) back to the original dynamic $10 per order formula: quantity = 10 / midPrice (in ICP terms, using the current mid-price). This dynamic calculation must be used as the default for all grid orders (both BUY and SELL sides) going forward.",
+        "id": "REQ-13",
+        "summary": "In the backend Motoko actor (backend/main.mo), add a new public update function `cancelOneOrderTest()` that calls `cancelOrder()` on the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' with a single hardcoded order ID (e.g., orderId = 0). This function must be completely self-contained and must not modify any existing functions including tradingLoop(). It serves only as a proof of concept that the cancelOrder() call compiles and executes without budget_exceeded errors.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []

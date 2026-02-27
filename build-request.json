@@ -1,38 +1,42 @@
 {
   "kind": "build_request",
-  "title": "Revert order quantity to dynamic $10 per order default",
-  "projectName": "ICDex Grid Bot",
-  "priority": "high",
+  "title": "Add hardcoded single order cancellation as proof of concept",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-12",
-      "text": "In the backend trading loop (tradingLoop()), revert the order quantity calculation from the fixed 2 ICP (200_000_000 e8s) back to the original dynamic $10 per order formula: quantity = 10 / midPrice (in ICP terms, using the current mid-price). This dynamic calculation must be used as the default for all grid orders (both BUY and SELL sides) going forward.",
+      "id": "REQ-13",
+      "text": "In the backend Motoko actor (backend/main.mo), add a new public update function `cancelOneOrderTest()` that calls `cancelOrder()` on the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' with a single hardcoded order ID (e.g., orderId = 0). This function must be completely self-contained and must not modify any existing functions including tradingLoop(). It serves only as a proof of concept that the cancelOrder() call compiles and executes without budget_exceeded errors.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-recent"
         ],
         "quotes": [
-          "volte para o padrão de 10 dollares como no inicio do projeto.. como padrão.."
+          "implemente apenas o cancelamento seletivo de uma única ordem hardcoded",
+          "Sim"
         ]
       },
       "acceptanceCriteria": [
-        "The trading loop no longer uses a hardcoded quantity of 200_000_000 e8s (2 ICP).",
-        "Each order quantity is computed as 10 / midPrice (representing $10 worth of ICP at current mid-price).",
-        "Both BUY and SELL grid orders use the same dynamic quantity formula.",
-        "The bot compiles and deploys without errors.",
-        "getLastGrid() returns orders with quantities reflecting the dynamic $10 calculation."
+        "A new public update function `cancelOneOrderTest()` exists in backend/main.mo",
+        "The function calls cancelOrder() on the ICDex canister with a single hardcoded order ID",
+        "No existing functions (tradingLoop, startBot, stopBot, etc.) are modified",
+        "The canister compiles successfully without budget_exceeded errors",
+        "The function can be called via dfx canister call without runtime errors"
       ]
     }
   ],
   "constraints": [
-    "Do not implement any new features (smart grid repositioning, order comparison, etc.) in this change — revert only the quantity calculation.",
-    "Preserve all existing backend logic (cancelOrder loop, placeOrder calls, balance queries, config endpoints)."
+    "Do not modify any existing functions in backend/main.mo",
+    "Do not touch any frontend files",
+    "Keep the change to the absolute minimum: only add the new cancelOneOrderTest() function",
+    "Do not add any comparison logic, grid calculations, or loop iterations"
   ],
   "nonGoals": [
-    "Smart grid repositioning (AR-4, AR-9) — this is a separate future feature.",
-    "Any frontend changes.",
-    "Changes to spreadBps, numOrders, intervalSeconds defaults."
+    "Smart grid repositioning logic",
+    "Fetching open orders from ICDex",
+    "Comparing open orders against new grid levels",
+    "Cancelling multiple orders",
+    "Any frontend changes"
   ],
   "imageRequirements": {
     "required": [],

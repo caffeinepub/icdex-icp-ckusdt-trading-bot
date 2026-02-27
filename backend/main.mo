@@ -180,4 +180,10 @@ actor {
       ignore await icDex.placeOrder(orderArgs);
     };
   };
+
+  // Cancel One Order Test (new function)
+  public shared ({ caller }) func cancelOneOrderTest() : async () {
+    let orderId = 0;
+    await icDex.cancelOrder({ orderId });
+  };
 };

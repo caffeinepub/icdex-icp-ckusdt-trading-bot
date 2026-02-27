@@ -11,6 +11,7 @@ import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
 export interface _SERVICE {
+  'cancelOneOrderTest' : ActorMethod<[], undefined>,
   'getBotStatus' : ActorMethod<[], boolean>,
   'getConfig' : ActorMethod<
     [],

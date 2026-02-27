@@ -90,6 +90,7 @@ export class ExternalBlob {
     }
 }
 export interface backendInterface {
+    cancelOneOrderTest(): Promise<void>;
     getBotStatus(): Promise<boolean>;
     getConfig(): Promise<{
         intervalSeconds: bigint;
@@ -104,6 +105,20 @@ export interface backendInterface {
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
+    async cancelOneOrderTest(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.cancelOneOrderTest();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.cancelOneOrderTest();
+            return result;
+        }
+    }
     async getBotStatus(): Promise<boolean> {
         if (this.processError) {
             try {

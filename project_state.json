@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 11,
+  "projectStateVersion": 13,
   "summary": "Trading bot for ICP/ckUSDT pair on ICDex, written in Motoko. Version 4 in production with cancelOrder() implemented. Reverting order quantity from fixed 2 ICP back to dynamic $10 per order (10 / midPrice). Next planned feature: smart grid repositioning (AR-4, AR-9) — cancel only orders outside new grid range.",
   "architectural_notes": [
     "Bot is a Motoko actor canister targeting ICDex pair canister jgxow-pqaaa-aaaar-qahaq-cai (ICP/ckUSDT)",
@@ -10,7 +10,9 @@
     "Grid repositioning cancels only orders outside the new grid range (not all open orders) to minimize fees",
     "Order quantity is dynamic: 10 / midPrice (representing $10 per order in ICP terms), not fixed at 2 ICP"
   ],
-  "known_issues": [],
+  "known_issues": [
+    "Smart grid repositioning (AR-4/AR-9) builds repeatedly fail with budget_exceeded; attempting bottom-up incremental implementation"
+  ],
   "isFixRequest": false,
   "existing_features": [
     {
@@ -138,6 +140,14 @@
       "summary": "In the backend trading loop (tradingLoop()), revert the order quantity calculation from the fixed 2 ICP (200_000_000 e8s) back to the original dynamic $10 per order formula: quantity = 10 / midPrice (in ICP terms, using the current mid-price). This dynamic calculation must be used as the default for all grid orders (both BUY and SELL sides) going forward.",
       "reqIds": [
         "REQ-12"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "In the backend Motoko actor (backend/main.mo), add a new public update function `cancelOneOrderTest()` that calls `cancelOrder()` on the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' with a single hardcoded order ID (e.g., orderId = 0). This function must be completely self-contained and must not modify any existing functions including tradingLoop(). It serves only as a proof of concept that the cancelOrder() call compiles and executes without budget_exceeded errors.",
+      "reqIds": [
+        "REQ-13"
       ],
       "status": "pending"
     }
