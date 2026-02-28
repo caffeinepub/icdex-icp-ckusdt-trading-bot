@@ -34,7 +34,7 @@ export enum Side {
 export interface backendInterface {
     cancelAllOpenOrders(): Promise<void>;
     cancelOneOrderTest(): Promise<void>;
-    getActivityLog(): Promise<Array<LogEntry>>;
+    getActivityLog(count: bigint, page: bigint): Promise<Array<LogEntry>>;
     getBotStatus(): Promise<boolean>;
     getConfig(): Promise<{
         intervalSeconds: bigint;
@@ -42,10 +42,8 @@ export interface backendInterface {
         numOrders: bigint;
     }>;
     getLastGrid(): Promise<Array<[string, bigint]>>;
-    getLastMidPrice(): Promise<bigint>;
-    getOpenOrders(): Promise<Array<OrderEntry>>;
     getTradeHistory(): Promise<Array<OrderEntry>>;
-    setConfig(newInterval: bigint, newSpread: bigint, newOrders: bigint): Promise<void>;
+    pending(): Promise<Array<OrderEntry>>;
     startBot(): Promise<void>;
     stopBot(): Promise<void>;
 }

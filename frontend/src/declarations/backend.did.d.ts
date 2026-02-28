@@ -33,17 +33,15 @@ export type Time = bigint;
 export interface _SERVICE {
   'cancelAllOpenOrders' : ActorMethod<[], undefined>,
   'cancelOneOrderTest' : ActorMethod<[], undefined>,
-  'getActivityLog' : ActorMethod<[], Array<LogEntry>>,
+  'getActivityLog' : ActorMethod<[bigint, bigint], Array<LogEntry>>,
   'getBotStatus' : ActorMethod<[], boolean>,
   'getConfig' : ActorMethod<
     [],
     { 'intervalSeconds' : bigint, 'spreadBps' : bigint, 'numOrders' : bigint }
   >,
   'getLastGrid' : ActorMethod<[], Array<[string, bigint]>>,
-  'getLastMidPrice' : ActorMethod<[], bigint>,
-  'getOpenOrders' : ActorMethod<[], Array<OrderEntry>>,
   'getTradeHistory' : ActorMethod<[], Array<OrderEntry>>,
-  'setConfig' : ActorMethod<[bigint, bigint, bigint], undefined>,
+  'pending' : ActorMethod<[], Array<OrderEntry>>,
   'startBot' : ActorMethod<[], undefined>,
   'stopBot' : ActorMethod<[], undefined>,
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, RefreshCw } from 'lucide-react';
-import { useLastMidPrice } from '@/hooks/useQueries';
+import { useLastGrid, useBotStatus } from '@/hooks/useQueries';
 
 function formatPrice(value: bigint): string {
     const n = Number(value) / 1e8;
@@ -19,7 +19,8 @@ function relativeTime(ms: number): string {
 }
 
 export function MarketDataPanel() {
-    const { data: midPrice, isLoading, isFetching, isError, refetch, dataUpdatedAt } = useLastMidPrice();
+    const { data: grid, isLoading, isFetching, isError, refetch, dataUpdatedAt } = useLastGrid();
+    const { data: isRunning } = useBotStatus();
     const [now, setNow] = useState(Date.now());
 
     useEffect(() => {
@@ -27,19 +28,30 @@ export function MarketDataPanel() {
         return () => clearInterval(id);
     }, []);
 
-    const hasPrice = midPrice !== undefined && midPrice > BigInt(0);
-    const ageMs = dataUpdatedAt ? now - dataUpdatedAt : null;
-    const isStale = ageMs !== null && ageMs > 15_000;
+    const gridLevels = grid ?? [];
 
-    let statusLabel = 'LIVE';
-    let statusClass = 'text-terminal-buy bg-terminal-buy/10 border-terminal-buy/30';
-    let borderClass = 'border-terminal-buy/20';
+    // Derive mid price from grid
+    const sells = gridLevels.filter(([side]) => side === 'sell').sort(([, a], [, b]) => Number(a - b));
+    const buys = gridLevels.filter(([side]) => side === 'buy').sort(([, a], [, b]) => Number(b - a));
+    const lowestSell = sells.length > 0 ? sells[0][1] : null;
+    const highestBuy = buys.length > 0 ? buys[0][1] : null;
+    const midPrice = lowestSell && highestBuy ? (lowestSell + highestBuy) / BigInt(2) : null;
+    const hasPrice = midPrice !== null && midPrice > BigInt(0);
+
+    const ageMs = dataUpdatedAt ? now - dataUpdatedAt : null;
+    const isStale = ageMs !== null && ageMs > 30_000;
+
+    let statusLabel = isRunning ? 'LIVE' : 'IDLE';
+    let statusClass = isRunning
+        ? 'text-terminal-buy bg-terminal-buy/10 border-terminal-buy/30'
+        : 'text-muted-foreground bg-muted/20 border-border';
+    let borderClass = isRunning ? 'border-terminal-buy/20' : 'border-border';
 
     if (isError) {
         statusLabel = 'ERROR';
         statusClass = 'text-terminal-sell bg-terminal-sell/10 border-terminal-sell/30';
         borderClass = 'border-terminal-sell/20';
-    } else if (isStale) {
+    } else if (isStale && hasPrice) {
         statusLabel = 'STALE';
         statusClass = 'text-terminal-warning bg-terminal-warning/10 border-terminal-warning/30';
         borderClass = 'border-terminal-warning/20';
@@ -60,57 +72,75 @@ export function MarketDataPanel() {
                     onClick={() => refetch()}
                     disabled={isFetching}
                     className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                    title="Refresh"
+                    title="Refresh market data"
                 >
                     <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
                 </button>
             </div>
 
-            {/* Price display */}
+            {/* Mid Price */}
             <div className="flex flex-col gap-1">
-                <span className="terminal-label">ICP / ckUSDT</span>
-                {isLoading ? (
-                    <div className="h-10 w-40 bg-muted rounded animate-pulse" />
-                ) : isError ? (
-                    <span className="text-2xl font-mono font-bold text-terminal-sell">—</span>
-                ) : (
-                    <span className={`text-3xl font-mono font-bold tracking-tight ${hasPrice ? 'text-foreground' : 'text-muted-foreground'}`}>
-                        {hasPrice ? formatPrice(midPrice!) : '—'}
-                    </span>
-                )}
-                {hasPrice && !isError && (
-                    <span className="text-xs font-mono text-muted-foreground">ckUSDT per ICP</span>
-                )}
-            </div>
-
-            {/* Info rows */}
-            <div className="flex flex-col gap-1.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
-                <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-muted-foreground">Mid Price</span>
-                    <span className={hasPrice ? 'text-foreground' : 'text-muted-foreground'}>
-                        {hasPrice ? formatPrice(midPrice!) : '—'}
-                    </span>
-                </div>
-                <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-muted-foreground">Source</span>
-                    <span className="text-muted-foreground opacity-70">ICDex level10</span>
-                </div>
-                <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-muted-foreground">Pair</span>
-                    <span className="text-muted-foreground opacity-70">ICP/ckUSDT</span>
-                </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between text-xs font-mono text-muted-foreground pt-1 border-t border-border">
-                <span>
-                    {dataUpdatedAt
-                        ? `Updated ${relativeTime(dataUpdatedAt)}`
-                        : 'Waiting for data…'}
+                <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+                    Mid Price (ICP/ckUSDT)
                 </span>
-                {isFetching && (
-                    <span className="text-terminal-buy/70 animate-pulse">Fetching…</span>
+                {isLoading ? (
+                    <div className="h-8 w-32 bg-muted rounded animate-pulse" />
+                ) : (
+                    <span className={`text-2xl font-mono font-bold tabular-nums ${hasPrice ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {hasPrice && midPrice ? formatPrice(midPrice) : '—'}
+                    </span>
                 )}
+                {dataUpdatedAt && hasPrice && (
+                    <span className="text-[10px] font-mono text-muted-foreground opacity-60">
+                        {relativeTime(dataUpdatedAt)}
+                    </span>
+                )}
+            </div>
+
+            {/* Grid stats */}
+            <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
+                    <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+                        Best Bid
+                    </span>
+                    <span className="text-sm font-mono font-semibold text-terminal-buy tabular-nums">
+                        {highestBuy ? formatPrice(highestBuy) : '—'}
+                    </span>
+                </div>
+                <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
+                    <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+                        Best Ask
+                    </span>
+                    <span className="text-sm font-mono font-semibold text-terminal-sell tabular-nums">
+                        {lowestSell ? formatPrice(lowestSell) : '—'}
+                    </span>
+                </div>
+            </div>
+
+            {/* Grid info */}
+            <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
+                    <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+                        Buy Levels
+                    </span>
+                    <span className="text-sm font-mono font-semibold text-foreground">
+                        {buys.length}
+                    </span>
+                </div>
+                <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
+                    <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+                        Sell Levels
+                    </span>
+                    <span className="text-sm font-mono font-semibold text-foreground">
+                        {sells.length}
+                    </span>
+                </div>
+            </div>
+
+            {/* Pair info */}
+            <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground pt-1 border-t border-border">
+                <span>ICP / ckUSDT</span>
+                <span className="opacity-60">ICDex · jgxow…cai</span>
             </div>
         </div>
     );

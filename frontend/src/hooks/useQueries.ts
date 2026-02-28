@@ -1,95 +1,153 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { OrderEntry, LogEntry } from '@/backend';
-import { OrderStatus } from '@/backend';
+import type { LogEntry, OrderEntry } from '@/backend';
 
-const POLL_MARKET_IDLE    = 10_000;  // 10s when bot is stopped
-const POLL_MARKET_RUNNING = 3_000;   // 3s when bot is running (catch state transitions fast)
-const POLL_ORDERS_IDLE    = 10_000;  // 10s for orders when idle
-const POLL_ORDERS_RUNNING = 5_000;   // 5s for orders when running
-const POLL_LOG_IDLE       = 15_000;  // 15s for activity log when idle
-const POLL_LOG_RUNNING    = 5_000;   // 5s for activity log when running (surface errors quickly)
+// ─── Local types matching the actual backend interface ────────────────────────
 
-// ─── Bot Status ──────────────────────────────────────────────────────────────
+export interface BotConfig {
+    intervalSeconds: bigint;
+    spreadBps: bigint;
+    numOrders: bigint;
+}
+
+// ─── Actor interface matching backend/main.mo ─────────────────────────────────
+
+interface TradingBotActor {
+    getBotStatus(): Promise<boolean>;
+    getConfig(): Promise<{ intervalSeconds: bigint; spreadBps: bigint; numOrders: bigint }>;
+    getLastGrid(): Promise<Array<[string, bigint]>>;
+    getTradeHistory(): Promise<Array<OrderEntry>>;
+    getActivityLog(count: bigint, page: bigint): Promise<Array<LogEntry>>;
+    pending(): Promise<Array<OrderEntry>>;
+    startBot(): Promise<void>;
+    stopBot(): Promise<void>;
+    cancelAllOpenOrders(): Promise<void>;
+    cancelOneOrderTest(): Promise<void>;
+}
+
+const POLL_FAST = 5_000;
+const POLL_SLOW = 15_000;
+
+// ─── Bot Status ───────────────────────────────────────────────────────────────
 
 export function useBotStatus() {
     const { actor, isFetching } = useActor();
+    const tradingActor = actor as unknown as TradingBotActor | null;
     return useQuery<boolean>({
         queryKey: ['botStatus'],
         queryFn: async () => {
-            if (!actor) return false;
-            return actor.getBotStatus();
+            if (!tradingActor) return false;
+            return tradingActor.getBotStatus();
         },
         enabled: !!actor && !isFetching,
-        // Always poll at the faster rate so we catch transitions promptly
-        refetchInterval: POLL_MARKET_RUNNING,
+        refetchInterval: POLL_FAST,
     });
 }
 
-// ─── Config ──────────────────────────────────────────────────────────────────
+// ─── Bot Config ───────────────────────────────────────────────────────────────
 
-export function useConfig() {
+export function useBotConfig() {
     const { actor, isFetching } = useActor();
-    return useQuery<{ intervalSeconds: bigint; spreadBps: bigint; numOrders: bigint }>({
-        queryKey: ['config'],
+    const tradingActor = actor as unknown as TradingBotActor | null;
+    return useQuery<BotConfig>({
+        queryKey: ['botConfig'],
         queryFn: async () => {
-            if (!actor) return { intervalSeconds: BigInt(60), spreadBps: BigInt(45), numOrders: BigInt(20) };
-            return actor.getConfig();
+            if (!tradingActor) return { intervalSeconds: BigInt(60), spreadBps: BigInt(45), numOrders: BigInt(20) };
+            return tradingActor.getConfig();
         },
         enabled: !!actor && !isFetching,
+        refetchInterval: POLL_SLOW,
     });
 }
 
-export function useSetConfig() {
+// ─── Start Bot ────────────────────────────────────────────────────────────────
+
+export function useStartBot() {
     const { actor } = useActor();
+    const tradingActor = actor as unknown as TradingBotActor | null;
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({
-            intervalSeconds,
-            spreadBps,
-            numOrders,
-        }: {
-            intervalSeconds: number;
-            spreadBps: number;
-            numOrders: number;
-        }) => {
-            if (!actor) throw new Error('Actor not initialized');
-            return actor.setConfig(BigInt(intervalSeconds), BigInt(spreadBps), BigInt(numOrders));
+        mutationFn: async () => {
+            if (!tradingActor) throw new Error('Actor not initialized');
+            return tradingActor.startBot();
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['config'] });
+            queryClient.invalidateQueries({ queryKey: ['botStatus'] });
+            queryClient.invalidateQueries({ queryKey: ['activityLog'] });
         },
     });
 }
 
-// ─── Market Data ─────────────────────────────────────────────────────────────
+// ─── Stop Bot ─────────────────────────────────────────────────────────────────
 
-export function useLastMidPrice() {
-    const { actor, isFetching } = useActor();
-    return useQuery<bigint>({
-        queryKey: ['lastMidPrice'],
-        queryFn: async () => {
-            if (!actor) return BigInt(0);
-            return actor.getLastMidPrice();
+export function useStopBot() {
+    const { actor } = useActor();
+    const tradingActor = actor as unknown as TradingBotActor | null;
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async () => {
+            if (!tradingActor) throw new Error('Actor not initialized');
+            return tradingActor.stopBot();
         },
-        enabled: !!actor && !isFetching,
-        refetchInterval: POLL_MARKET_IDLE,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['botStatus'] });
+            queryClient.invalidateQueries({ queryKey: ['openOrders'] });
+            queryClient.invalidateQueries({ queryKey: ['activityLog'] });
+        },
     });
 }
 
-// ─── Grid Preview ─────────────────────────────────────────────────────────────
+// ─── Cancel All Open Orders ───────────────────────────────────────────────────
+
+export function useCancelAllOrders() {
+    const { actor } = useActor();
+    const tradingActor = actor as unknown as TradingBotActor | null;
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async () => {
+            if (!tradingActor) throw new Error('Actor not initialized');
+            return tradingActor.cancelAllOpenOrders();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['openOrders'] });
+            queryClient.invalidateQueries({ queryKey: ['tradeHistory'] });
+            queryClient.invalidateQueries({ queryKey: ['activityLog'] });
+        },
+    });
+}
+
+// ─── Last Grid (price levels) ─────────────────────────────────────────────────
 
 export function useLastGrid() {
     const { actor, isFetching } = useActor();
+    const tradingActor = actor as unknown as TradingBotActor | null;
     const { data: isRunning } = useBotStatus();
     return useQuery<Array<[string, bigint]>>({
         queryKey: ['lastGrid'],
         queryFn: async () => {
-            if (!actor) return [];
-            return actor.getLastGrid();
+            if (!tradingActor) return [];
+            return tradingActor.getLastGrid();
         },
         enabled: !!actor && !isFetching,
-        refetchInterval: isRunning ? POLL_ORDERS_RUNNING : POLL_ORDERS_IDLE,
+        refetchInterval: isRunning ? POLL_FAST : POLL_SLOW,
+    });
+}
+
+// ─── Open Orders (pending) ────────────────────────────────────────────────────
+
+export function useOpenOrders() {
+    const { actor, isFetching } = useActor();
+    const tradingActor = actor as unknown as TradingBotActor | null;
+    const { data: isRunning } = useBotStatus();
+    return useQuery<OrderEntry[]>({
+        queryKey: ['openOrders'],
+        queryFn: async () => {
+            if (!tradingActor) return [];
+            return tradingActor.pending();
+        },
+        enabled: !!actor && !isFetching,
+        refetchInterval: isRunning ? POLL_FAST : POLL_SLOW,
+        refetchOnWindowFocus: true,
     });
 }
 
@@ -97,152 +155,30 @@ export function useLastGrid() {
 
 export function useTradeHistory() {
     const { actor, isFetching } = useActor();
-    const { data: isRunning } = useBotStatus();
+    const tradingActor = actor as unknown as TradingBotActor | null;
     return useQuery<OrderEntry[]>({
         queryKey: ['tradeHistory'],
         queryFn: async () => {
-            if (!actor) return [];
-            return actor.getTradeHistory();
+            if (!tradingActor) return [];
+            return tradingActor.getTradeHistory();
         },
         enabled: !!actor && !isFetching,
-        refetchInterval: isRunning ? POLL_ORDERS_RUNNING : POLL_ORDERS_IDLE,
-    });
-}
-
-// ─── Open Orders ──────────────────────────────────────────────────────────────
-
-export function useOpenOrders() {
-    const { actor, isFetching } = useActor();
-    const { data: isRunning } = useBotStatus();
-    return useQuery<OrderEntry[]>({
-        queryKey: ['openOrders'],
-        queryFn: async () => {
-            if (!actor) return [];
-            return actor.getOpenOrders();
-        },
-        enabled: !!actor && !isFetching,
-        refetchInterval: isRunning ? POLL_ORDERS_RUNNING : POLL_ORDERS_IDLE,
+        refetchInterval: POLL_FAST,
     });
 }
 
 // ─── Activity Log ─────────────────────────────────────────────────────────────
 
-export function useActivityLog() {
+export function useActivityLog(count = 50, page = 0) {
     const { actor, isFetching } = useActor();
-    const { data: isRunning } = useBotStatus();
+    const tradingActor = actor as unknown as TradingBotActor | null;
     return useQuery<LogEntry[]>({
-        queryKey: ['activityLog'],
+        queryKey: ['activityLog', count, page],
         queryFn: async () => {
-            if (!actor) return [];
-            return actor.getActivityLog();
+            if (!tradingActor) return [];
+            return tradingActor.getActivityLog(BigInt(count), BigInt(page));
         },
         enabled: !!actor && !isFetching,
-        refetchInterval: isRunning ? POLL_LOG_RUNNING : POLL_LOG_IDLE,
+        refetchInterval: POLL_FAST,
     });
-}
-
-// ─── Bot Controls ─────────────────────────────────────────────────────────────
-
-export function useStartBot() {
-    const { actor } = useActor();
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async () => {
-            if (!actor) throw new Error('Actor not initialized');
-            return actor.startBot();
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['botStatus'] });
-            queryClient.invalidateQueries({ queryKey: ['activityLog'] });
-            queryClient.invalidateQueries({ queryKey: ['openOrders'] });
-        },
-    });
-}
-
-export function useStopBot() {
-    const { actor } = useActor();
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async () => {
-            if (!actor) throw new Error('Actor not initialized');
-            return actor.stopBot();
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['botStatus'] });
-            queryClient.invalidateQueries({ queryKey: ['activityLog'] });
-            queryClient.invalidateQueries({ queryKey: ['openOrders'] });
-        },
-    });
-}
-
-// ─── Derived: Order Errors ────────────────────────────────────────────────────
-
-export interface OrderError {
-    orderId: bigint;
-    side: 'buy' | 'sell';
-    timestamp: number;
-    price: bigint;
-    quantity: bigint;
-}
-
-/**
- * Derives recently cancelled orders from trade history (last 5 minutes).
- * Used to surface unexpected cancellations in the BotControlPanel.
- */
-export function useOrderErrors() {
-    const { data: history, isLoading } = useTradeHistory();
-
-    const errors: OrderError[] = [];
-
-    if (history) {
-        const fiveMinAgoNs = BigInt(Date.now() - 5 * 60 * 1000) * BigInt(1_000_000);
-        for (const entry of history) {
-            if (entry.status === OrderStatus.cancelled && entry.timestamp > fiveMinAgoNs) {
-                errors.push({
-                    orderId: entry.orderId,
-                    side: entry.side === 'buy' ? 'buy' : 'sell',
-                    timestamp: Number(entry.timestamp / BigInt(1_000_000)),
-                    price: entry.price,
-                    quantity: entry.quantity,
-                });
-            }
-        }
-        errors.sort((a, b) => b.timestamp - a.timestamp);
-    }
-
-    return { errors, isLoading, hasErrors: errors.length > 0 };
-}
-
-// ─── Derived: Order Placement Errors from Activity Log ───────────────────────
-
-export interface PlacementError {
-    id: string;
-    message: string;
-    timestamp: number;
-}
-
-/**
- * Extracts recent order placement errors from the activity log (last 10 minutes).
- * These are log entries with eventType === 'error' emitted by the trading loop.
- */
-export function useOrderPlacementErrors() {
-    const { data: log, isLoading } = useActivityLog();
-
-    const errors: PlacementError[] = [];
-
-    if (log) {
-        const tenMinAgoNs = BigInt(Date.now() - 10 * 60 * 1000) * BigInt(1_000_000);
-        log.forEach((entry, index) => {
-            if (entry.eventType === 'error' && entry.timestamp > tenMinAgoNs) {
-                errors.push({
-                    id: `${String(entry.timestamp)}-${index}`,
-                    message: entry.message,
-                    timestamp: Number(entry.timestamp / BigInt(1_000_000)),
-                });
-            }
-        });
-        errors.sort((a, b) => b.timestamp - a.timestamp);
-    }
-
-    return { errors, isLoading, hasErrors: errors.length > 0 };
 }

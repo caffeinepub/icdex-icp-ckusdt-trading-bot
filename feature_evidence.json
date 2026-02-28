@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-frontend-botcontrolpanel-to-reflect-the-bot-s-running-stopped-state-accurately-after-the-timer-driven-loop-is-wired-up-and-surface-any-order-placement-errors-reported-by-the-backend",
-      "featureTitle": "Update the frontend BotControlPanel to reflect the bot's running/stopped state accurately after the timer-driven loop is wired up, and surface any order placement errors reported by the backend.",
+      "featureId": "feature-update-the-frontend-usequeries-ts-hook-to-call-the-backend-pending-method-for-fetching-open-orders-replacing-any-previous-incorrect-query-ensure-the-openorderspanel-continues-to-display-the-live-list-of-open-bot-orders-correctly",
+      "featureTitle": "Update the frontend `useQueries.ts` hook to call the backend `pending` method for fetching open orders, replacing any previous incorrect query. Ensure the OpenOrdersPanel continues to display the live list of open bot orders correctly.",
       "files": [
-        "frontend/src/components/BotControlPanel.tsx",
+        "frontend/src/components/OpenOrdersPanel.tsx",
         "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
@@ -16,7 +16,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-4"
+        "REQ-3"
       ],
       "confidence": "high"
     }

@@ -1,23 +1,32 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T16:56:21.118Z",
-  "summary": "The diff implements most of the required features: backend grid logic in main.mo, timer-driven bot loop, open orders query method, and BotControlPanel updates with running/stopped status and dismissible error alerts. All four REQs appear to be addressed, though the backend is truncated making some AC verifications uncertain.",
-  "missing_requirements": [],
+  "generatedAt": "2026-02-28T18:34:22.332Z",
+  "summary": "The diff implements a grid trading bot with ICDex integration across backend/main.mo and frontend hooks/components. REQ-2 and REQ-3 are clearly implemented. REQ-1 has a partial implementation visible in the truncated backend, but several key acceptance criteria cannot be fully verified from the truncated diff.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "The timer-based bot loop must cancel existing open bot orders that deviate from the new grid via ICDex cancel API before placing new orders, and must enforce a maxOpenOrders limit.",
+      "reason": "The backend/main.mo diff is truncated before the bot loop body is shown. While ICDex interface types (placeOrder, cancelOrder, getLevel10, ticker) and openOrderMap are defined, the actual timer callback implementation that performs grid alignment checks, cancels misaligned orders, enforces maxOpenOrders, and places new orders is cut off. The acceptance criteria for 'orders that deviate from the current grid are cancelled via ICDex cancel API' and 'number of open orders does not exceed maxOpenOrders config' cannot be confirmed.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    }
+  ],
   "hallucinated_features": [
     {
-      "description": "useOrderErrors hook and cancellation-based dismissible amber alerts section in BotControlPanel",
-      "reason": "The BotControlPanel imports and uses useOrderErrors for cancel errors, producing a separate amber dismissible alert section for cancellations. The build request only asks for order placement errors to be surfaced as dismissible alerts; cancel-specific error alerts were not requested.",
+      "description": "cancelAllOpenOrders method exposed and wired to a Cancel All button in OpenOrdersPanel",
+      "reason": "The build request explicitly lists manual order placement and cancellation buttons in the dashboard as a non-goal (separate task). The diff adds a useCancelAllOrders hook calling cancelAllOpenOrders() and a Cancel All button in OpenOrdersPanel.",
       "evidence": [
-        "frontend/src/components/BotControlPanel.tsx",
+        "frontend/src/components/OpenOrdersPanel.tsx",
         "frontend/src/hooks/useQueries.ts"
       ]
     },
     {
-      "description": "Grid capital requirements estimator displayed in BotControlPanel",
-      "reason": "The BotControlPanel includes an estimateGridRequirements function and displays minimum ICP/USDT capital estimates. This was not requested in any requirement or acceptance criterion.",
+      "description": "cancelOneOrderTest method exposed in the TradingBotActor TypeScript interface",
+      "reason": "No requirement mentions a cancelOneOrderTest method. It appears in the TradingBotActor TypeScript interface in useQueries.ts but was never requested.",
       "evidence": [
-        "frontend/src/components/BotControlPanel.tsx"
+        "frontend/src/hooks/useQueries.ts"
       ]
     }
   ],
@@ -26,6 +35,10 @@
     "backend/main.mo",
     "frontend-file-summaries.txt",
     "frontend/src/components/BotControlPanel.tsx",
+    "frontend/src/components/ConfigurationPanel.tsx",
+    "frontend/src/components/GridPreviewTable.tsx",
+    "frontend/src/components/MarketDataPanel.tsx",
+    "frontend/src/components/OpenOrdersPanel.tsx",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]

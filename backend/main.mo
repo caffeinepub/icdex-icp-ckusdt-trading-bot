@@ -1,15 +1,13 @@
-import Map "mo:core/Map";
+import Array "mo:core/Array";
+import Time "mo:core/Time";
+import Nat "mo:core/Nat";
 import Queue "mo:core/Queue";
 import Timer "mo:core/Timer";
-import Nat "mo:core/Nat";
-import Runtime "mo:core/Runtime";
-import Array "mo:core/Array";
-import VarArray "mo:core/VarArray";
-import Time "mo:core/Time";
-import List "mo:core/List";
+import Map "mo:core/Map";
+import Iter "mo:core/Iter";
 
 actor {
-  // ICDex Types (no outcalls pendingAll)
+  // ICDex Types (no HTTP outcalls yet)
   type Side = { #buy; #sell };
   type OrderType = { #limit; #market; #chase; #post_only };
   type OrderId = Nat;
@@ -66,13 +64,6 @@ actor {
 
   let icDex = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDex;
 
-  type OpenOrder = {
-    orderId : Nat;
-    side : Side;
-    price : Nat;
-    quantity : Nat;
-  };
-
   type LogEntry = {
     timestamp : Time.Time;
     eventType : Text;
@@ -81,8 +72,16 @@ actor {
 
   let activityLog = Queue.empty<LogEntry>();
 
-  public query ({ caller }) func getActivityLog() : async [LogEntry] {
-    activityLog.toVarArray<LogEntry>().toArray();
+  public query ({ caller }) func getActivityLog(count : Nat, page : Nat) : async [LogEntry] {
+    if (count <= 0) { return [] };
+    let totalEntries = activityLog.size();
+    if (totalEntries == 0) { return [] };
+    let startIndex = page * count;
+    let remainingEntries = if (totalEntries > startIndex) { totalEntries - startIndex : Nat } else { 0 };
+    let countToReturn = Nat.min(count, remainingEntries);
+    let toVarArray = activityLog.toVarArray().toArray();
+    let reversedEntries = toVarArray.reverse();
+    reversedEntries.sliceToArray(startIndex, countToReturn);
   };
 
   func addLogEntry(eventType : Text, message : Text) {
@@ -92,7 +91,8 @@ actor {
       message;
     };
 
-    let logArray = activityLog.toVarArray().toArray();
+    let toVarArray = activityLog.toVarArray();
+    let logArray = toVarArray.toArray();
     activityLog.clear();
 
     let maxLogSize = 100;
@@ -129,22 +129,7 @@ actor {
     };
   };
 
-  public shared ({ caller }) func setConfig(newInterval : Nat, newSpread : Nat, newOrders : Nat) : async () {
-    if (
-      newInterval < 10 or newInterval > 3600 or newSpread < 10 or newSpread > 2000 or newOrders < 4 or newOrders > 50
-    ) {
-      Runtime.trap("Invalid configuration parameters");
-    };
-    intervalSeconds := newInterval;
-    spreadBps := newSpread;
-    numOrders := newOrders;
-  };
-
-  public query ({ caller }) func getLastMidPrice() : async Nat {
-    lastMidPrice;
-  };
-
-  func sideToText(side : Side) : Text {
+  private func sideToText(side : Side) : Text {
     switch (side) {
       case (#buy) { "buy" };
       case (#sell) { "sell" };
@@ -161,8 +146,7 @@ actor {
   };
 
   public query ({ caller }) func getTradeHistory() : async [OrderEntry] {
-    let tradeHistory = orderHistoryMap.values().toVarArray<OrderEntry>().toArray();
-    tradeHistory;
+    orderHistoryMap.values().toVarArray<OrderEntry>().toArray();
   };
 
   func createOrderId() : Nat {
@@ -172,7 +156,7 @@ actor {
   };
 
   public shared ({ caller }) func startBot() : async () {
-    if (botRunning) { Runtime.trap("Bot is already running") };
+    if (botRunning) { return };
     switch (timerId) {
       case (?id) { Timer.cancelTimer(id) };
       case (null) {};
@@ -183,7 +167,7 @@ actor {
   };
 
   public shared ({ caller }) func stopBot() : async () {
-    if (not botRunning) { Runtime.trap("Bot is not running") };
+    if (not botRunning) { return };
     switch (timerId) {
       case (?id) { Timer.cancelTimer(id) };
       case (null) {};
@@ -230,11 +214,11 @@ actor {
       }
     );
 
-    let buyArray = buyGrid.toArray();
+    let toArray = buyGrid.toArray();
     let sellArray = sellGrid.toArray();
-    lastGridData := buyArray.concat(sellArray);
+    lastGridData := toArray.concat(sellArray);
 
-    await placeOrders(buyArray.concat(sellArray), midPrice);
+    await placeOrders(toArray.concat(sellArray), midPrice);
   };
 
   func placeOrders(grid : [(Side, Nat)], price : Nat) : async () {
@@ -242,7 +226,7 @@ actor {
 
     if (quantity == 0) {
       addLogEntry("error", "Order quantity too small at current price: " # price.toText());
-      Runtime.trap("Order quantity too small at current price");
+      return;
     };
 
     let currentTimestamp = Time.now();
@@ -279,13 +263,13 @@ actor {
     addLogEntry("order_cancelled", "Cancelled order with ID: " # orderId.toText());
   };
 
-  public query ({ caller }) func getOpenOrders() : async [OrderEntry] {
+  public query ({ caller }) func pending() : async [OrderEntry] {
     openOrderMap.values().toArray();
   };
 
   public shared ({ caller }) func cancelAllOpenOrders() : async () {
-    let openOrders = await getOpenOrders();
-    for (order in openOrders.values()) {
+    let openOrders = openOrderMap.values();
+    for (order in openOrders) {
       await icDex.cancelOrder({ orderId = order.orderId });
       let cancelledTimestamp = Time.now();
       let cancelledEntry = {

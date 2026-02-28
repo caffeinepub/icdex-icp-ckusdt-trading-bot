@@ -1,47 +1,40 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T16:56:21.120Z",
+  "generatedAt": "2026-02-28T18:34:22.334Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
+    "total": 3,
     "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Implement the automated grid order placement logic in the backend: when the bot is running, compute buy and sell grid levels based on the configured spread and order count parameters, then place limit orders on both sides of the current mid price across those grid levels.",
+        "summary": "In the backend actor (backend/main.mo), implement the core grid trading loop that places real buy and sell orders via ICDex. For each cycle: (1) query current mid-price from ICDex, (2) calculate grid levels based on configured spread, numOrders, and orderSize, (3) cancel any existing open bot orders that are no longer aligned with the new grid (using the ICDex cancel endpoint), (4) place new buy orders below mid-price and sell orders above mid-price using the ICDex trade/order placement endpoint, (5) store placed order IDs in the open orders map, and (6) log each placed and cancelled order to the activity log. The loop must be driven by the existing recurring timer.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Implement the periodic timer-driven bot loop in the backend: on each timer tick (based on the configured interval), fetch the latest market mid price, recompute the grid, cancel stale or out-of-range orders, and place new grid orders as needed.",
+        "summary": "In the backend actor (backend/main.mo), implement a `pending` query method that returns all currently open orders tracked by the bot by reading from the open orders map. Replace any existing incorrect calls to retrieve open orders with this method.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Expose a backend query method to retrieve currently open orders so the frontend OpenOrdersPanel can display the live grid state.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Update the frontend BotControlPanel to reflect the bot's running/stopped state accurately after the timer-driven loop is wired up, and surface any order placement errors reported by the backend.",
+        "summary": "Update the frontend `useQueries.ts` hook to call the backend `pending` method for fetching open orders, replacing any previous incorrect query. Ensure the OpenOrdersPanel continues to display the live list of open bot orders correctly.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/BotControlPanel.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/OpenOrdersPanel.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/BotControlPanel.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/OpenOrdersPanel.tsx"
         ]
       }
     ]
@@ -53,6 +46,10 @@
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/components/BotControlPanel.tsx",
+    "frontend/src/components/ConfigurationPanel.tsx",
+    "frontend/src/components/GridPreviewTable.tsx",
+    "frontend/src/components/MarketDataPanel.tsx",
+    "frontend/src/components/OpenOrdersPanel.tsx",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",

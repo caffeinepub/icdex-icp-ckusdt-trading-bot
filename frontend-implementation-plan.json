@@ -1,26 +1,26 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add automated grid trading logic frontend integration",
+  "title": "Implement real buy/sell order placement and cancellation via ICDex in the grid trading loop",
   "requirements": [
     {
-      "id": "REQ-4",
-      "summary": "Update BotControlPanel to reflect running/stopped state and display order placement errors",
+      "id": "REQ-3",
+      "summary": "Update frontend useQueries.ts hook to call the backend pending method for fetching open orders, ensuring OpenOrdersPanel displays live bot orders correctly",
       "acceptanceCriteria": [
-        "BotControlPanel shows 'Running' status when the timer loop is active",
-        "BotControlPanel shows 'Stopped' status when the bot is not running",
-        "Order placement errors returned by the backend are displayed as dismissible alerts in BotControlPanel"
+        "The React Query hook for open orders calls the `pending` backend method.",
+        "The OpenOrdersPanel renders the returned open orders without errors.",
+        "Loading, error, and empty states are handled correctly."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/BotControlPanel.tsx",
-          "operation": "modify",
-          "description": "Enhance the status display logic to accurately reflect the bot's running state from the backend timer loop. Update the error alert section to handle and display order placement errors specifically (in addition to start/stop errors). Ensure the running/stopped badge updates reactively when the backend timer state changes. Add logic to poll or refresh bot status more frequently when the bot is running to catch state transitions promptly."
-        },
-        {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Review and adjust the polling interval for useBotStatus to ensure the frontend receives timely updates when the backend timer loop starts or stops. Consider adding a more aggressive polling strategy (e.g., every 2-3 seconds) when the bot is in a running state to surface order placement errors quickly. Ensure error states from backend mutations are properly surfaced to the UI layer."
+          "description": "Update the useOpenOrders React Query hook to call the backend `pending` method instead of any previous incorrect query. Ensure the hook returns the array of OrderEntry records with proper loading, error, and refetch capabilities. The query should use 'openOrders' as the query key and refetch on window focus to keep the open orders list current."
+        },
+        {
+          "path": "frontend/src/components/OpenOrdersPanel.tsx",
+          "operation": "modify",
+          "description": "Verify that the OpenOrdersPanel component correctly consumes the updated useOpenOrders hook and renders the list of pending bot orders. Ensure loading skeletons display during fetch, error states show appropriate messages, and empty states indicate no open orders. The panel should display order details including side, price, quantity, and timestamp in a user-friendly format."
         }
       ]
     }

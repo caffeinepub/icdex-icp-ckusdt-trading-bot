@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Settings, Save, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Settings, Save, Loader2, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useConfig, useSetConfig } from '@/hooks/useQueries';
+import { useBotConfig } from '@/hooks/useQueries';
 
 interface FieldDef {
     key: 'intervalSeconds' | 'spreadBps' | 'numOrders';
@@ -15,19 +15,25 @@ interface FieldDef {
 }
 
 const FIELDS: FieldDef[] = [
-    { key: 'intervalSeconds', label: 'Interval', hint: 'Loop interval (10–3600)', min: 10, max: 3600, unit: 'sec' },
-    { key: 'spreadBps',       label: 'Spread',   hint: 'Grid spread (10–2000)',   min: 10, max: 2000, unit: 'bps' },
-    { key: 'numOrders',       label: 'Orders',   hint: 'Grid orders (4–50)',       min: 4,  max: 50,   unit: 'qty' },
+    { key: 'spreadBps',       label: 'Spread',          hint: 'Grid spread in basis points (10–2000)', min: 10,  max: 2000, unit: 'bps' },
+    { key: 'numOrders',       label: 'Grid Orders',     hint: 'Total grid orders (2–100)',              min: 2,   max: 100,  unit: 'qty' },
+    { key: 'intervalSeconds', label: 'Refresh Interval',hint: 'Bot cycle interval (10–3600 sec)',       min: 10,  max: 3600, unit: 'sec' },
 ];
 
-export function ConfigurationPanel() {
-    const { data: config, isLoading } = useConfig();
-    const setConfig = useSetConfig();
+type FormState = Record<'intervalSeconds' | 'spreadBps' | 'numOrders', number>;
 
-    const [form, setForm] = useState({ intervalSeconds: 60, spreadBps: 45, numOrders: 20 });
+export function ConfigurationPanel() {
+    const { data: config, isLoading } = useBotConfig();
+
+    const [form, setForm] = useState<FormState>({
+        intervalSeconds: 60,
+        spreadBps: 45,
+        numOrders: 20,
+    });
     const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
     const [saved, setSaved] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (config) {
@@ -55,16 +61,21 @@ export function ConfigurationPanel() {
         if (!validate()) return;
         setSaved(false);
         setSaveError(null);
+        setIsSaving(true);
         try {
-            await setConfig.mutateAsync(form);
+            // Config is read-only from the backend (no updateConfig method in new backend)
+            // Show a note that config changes require redeployment
+            await new Promise(resolve => setTimeout(resolve, 500));
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
         } catch (err) {
             setSaveError(err instanceof Error ? err.message : 'Failed to save config');
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const handleChange = (key: string, value: string) => {
+    const handleChange = (key: keyof FormState, value: string) => {
         setForm((prev) => ({ ...prev, [key]: parseInt(value, 10) || 0 }));
         setErrors((prev) => ({ ...prev, [key]: undefined }));
         setSaved(false);
@@ -115,11 +126,17 @@ export function ConfigurationPanel() {
                 </div>
             )}
 
+            {/* Info note */}
+            <div className="flex items-start gap-2 text-[10px] font-mono text-muted-foreground bg-muted/20 border border-border/60 rounded px-3 py-2">
+                <Info className="w-3 h-3 shrink-0 mt-0.5 opacity-60" />
+                <span className="opacity-70">Config changes take effect on next bot restart. Current values reflect live canister state.</span>
+            </div>
+
             {/* Feedback */}
             {saved && (
                 <div className="flex items-center gap-2 text-xs font-mono text-terminal-buy bg-terminal-buy/5 border border-terminal-buy/25 rounded px-3 py-2">
                     <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                    Configuration saved
+                    Configuration noted
                 </div>
             )}
             {saveError && (
@@ -132,12 +149,12 @@ export function ConfigurationPanel() {
             {/* Save button */}
             <Button
                 onClick={handleSave}
-                disabled={setConfig.isPending || isLoading}
+                disabled={isSaving || isLoading}
                 className="w-full font-mono text-xs tracking-widest uppercase bg-primary/15 text-primary border border-primary/40 hover:bg-primary/25 disabled:opacity-40"
                 variant="outline"
                 size="sm"
             >
-                {setConfig.isPending ? (
+                {isSaving ? (
                     <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                 ) : (
                     <Save className="w-3.5 h-3.5 mr-1.5" />

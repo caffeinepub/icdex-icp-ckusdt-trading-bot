@@ -116,7 +116,7 @@ export enum Side {
 export interface backendInterface {
     cancelAllOpenOrders(): Promise<void>;
     cancelOneOrderTest(): Promise<void>;
-    getActivityLog(): Promise<Array<LogEntry>>;
+    getActivityLog(count: bigint, page: bigint): Promise<Array<LogEntry>>;
     getBotStatus(): Promise<boolean>;
     getConfig(): Promise<{
         intervalSeconds: bigint;
@@ -124,10 +124,8 @@ export interface backendInterface {
         numOrders: bigint;
     }>;
     getLastGrid(): Promise<Array<[string, bigint]>>;
-    getLastMidPrice(): Promise<bigint>;
-    getOpenOrders(): Promise<Array<OrderEntry>>;
     getTradeHistory(): Promise<Array<OrderEntry>>;
-    setConfig(newInterval: bigint, newSpread: bigint, newOrders: bigint): Promise<void>;
+    pending(): Promise<Array<OrderEntry>>;
     startBot(): Promise<void>;
     stopBot(): Promise<void>;
 }
@@ -162,17 +160,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getActivityLog(): Promise<Array<LogEntry>> {
+    async getActivityLog(arg0: bigint, arg1: bigint): Promise<Array<LogEntry>> {
         if (this.processError) {
             try {
-                const result = await this.actor.getActivityLog();
+                const result = await this.actor.getActivityLog(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getActivityLog();
+            const result = await this.actor.getActivityLog(arg0, arg1);
             return result;
         }
     }
@@ -222,34 +220,6 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getLastMidPrice(): Promise<bigint> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getLastMidPrice();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getLastMidPrice();
-            return result;
-        }
-    }
-    async getOpenOrders(): Promise<Array<OrderEntry>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getOpenOrders();
-                return from_candid_vec_n1(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getOpenOrders();
-            return from_candid_vec_n1(this._uploadFile, this._downloadFile, result);
-        }
-    }
     async getTradeHistory(): Promise<Array<OrderEntry>> {
         if (this.processError) {
             try {
@@ -264,18 +234,18 @@ export class Backend implements backendInterface {
             return from_candid_vec_n1(this._uploadFile, this._downloadFile, result);
         }
     }
-    async setConfig(arg0: bigint, arg1: bigint, arg2: bigint): Promise<void> {
+    async pending(): Promise<Array<OrderEntry>> {
         if (this.processError) {
             try {
-                const result = await this.actor.setConfig(arg0, arg1, arg2);
-                return result;
+                const result = await this.actor.pending();
+                return from_candid_vec_n1(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.setConfig(arg0, arg1, arg2);
-            return result;
+            const result = await this.actor.pending();
+            return from_candid_vec_n1(this._uploadFile, this._downloadFile, result);
         }
     }
     async startBot(): Promise<void> {

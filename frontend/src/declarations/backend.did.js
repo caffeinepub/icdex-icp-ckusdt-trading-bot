@@ -33,7 +33,11 @@ export const OrderEntry = IDL.Record({
 export const idlService = IDL.Service({
   'cancelAllOpenOrders' : IDL.Func([], [], []),
   'cancelOneOrderTest' : IDL.Func([], [], []),
-  'getActivityLog' : IDL.Func([], [IDL.Vec(LogEntry)], ['query']),
+  'getActivityLog' : IDL.Func(
+      [IDL.Nat, IDL.Nat],
+      [IDL.Vec(LogEntry)],
+      ['query'],
+    ),
   'getBotStatus' : IDL.Func([], [IDL.Bool], ['query']),
   'getConfig' : IDL.Func(
       [],
@@ -51,10 +55,8 @@ export const idlService = IDL.Service({
       [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
       ['query'],
     ),
-  'getLastMidPrice' : IDL.Func([], [IDL.Nat], ['query']),
-  'getOpenOrders' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
   'getTradeHistory' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
-  'setConfig' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat], [], []),
+  'pending' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
   'startBot' : IDL.Func([], [], []),
   'stopBot' : IDL.Func([], [], []),
 });
@@ -87,7 +89,11 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     'cancelAllOpenOrders' : IDL.Func([], [], []),
     'cancelOneOrderTest' : IDL.Func([], [], []),
-    'getActivityLog' : IDL.Func([], [IDL.Vec(LogEntry)], ['query']),
+    'getActivityLog' : IDL.Func(
+        [IDL.Nat, IDL.Nat],
+        [IDL.Vec(LogEntry)],
+        ['query'],
+      ),
     'getBotStatus' : IDL.Func([], [IDL.Bool], ['query']),
     'getConfig' : IDL.Func(
         [],
@@ -105,10 +111,8 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
         ['query'],
       ),
-    'getLastMidPrice' : IDL.Func([], [IDL.Nat], ['query']),
-    'getOpenOrders' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
     'getTradeHistory' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
-    'setConfig' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat], [], []),
+    'pending' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
     'startBot' : IDL.Func([], [], []),
     'stopBot' : IDL.Func([], [], []),
   });

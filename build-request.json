@@ -1,94 +1,78 @@
 {
   "kind": "build_request",
-  "title": "Add automated grid trading logic",
+  "title": "Implement real buy/sell order placement and cancellation via ICDex in the grid trading loop",
   "projectName": "ICDex Grid Bot",
-  "priority": "normal",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Implement the automated grid order placement logic in the backend: when the bot is running, compute buy and sell grid levels based on the configured spread and order count parameters, then place limit orders on both sides of the current mid price across those grid levels.",
+      "text": "In the backend actor (backend/main.mo), implement the core grid trading loop that places real buy and sell orders via ICDex. For each cycle: (1) query current mid-price from ICDex, (2) calculate grid levels based on configured spread, numOrders, and orderSize, (3) cancel any existing open bot orders that are no longer aligned with the new grid (using the ICDex cancel endpoint), (4) place new buy orders below mid-price and sell orders above mid-price using the ICDex trade/order placement endpoint, (5) store placed order IDs in the open orders map, and (6) log each placed and cancelled order to the activity log. The loop must be driven by the existing recurring timer.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-recent"
         ],
         "quotes": [
-          "add the automated grid trading logic"
+          "colocar ordens reais de compra/venda via ICDex",
+          "Loop de trading grid — colocar ordens reais de compra/venda via ICDex com cancelamento e reposicionamento correto"
         ]
       },
       "acceptanceCriteria": [
-        "Grid buy and sell levels are calculated from current mid price, configured spread, and order count",
-        "Buy orders are placed below mid price and sell orders above mid price at each grid level",
-        "Placed orders are recorded and retrievable via the open orders query method",
-        "Order placement activity is logged to the activity log",
-        "If the bot is stopped, no orders are placed"
+        "The timer-based bot loop calls the ICDex order placement API to place real buy and sell limit orders at each grid level.",
+        "Orders that deviate from the current grid are cancelled via ICDex cancel API before new orders are placed.",
+        "Placed order IDs are persisted in the open orders stable map.",
+        "Each order placement and cancellation is recorded as a LogEntry in the activity log.",
+        "The number of open orders does not exceed maxOpenOrders config.",
+        "The loop only runs when the bot is enabled."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Implement the periodic timer-driven bot loop in the backend: on each timer tick (based on the configured interval), fetch the latest market mid price, recompute the grid, cancel stale or out-of-range orders, and place new grid orders as needed.",
+      "text": "In the backend actor (backend/main.mo), implement a `pending` query method that returns all currently open orders tracked by the bot by reading from the open orders map. Replace any existing incorrect calls to retrieve open orders with this method.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-recent"
         ],
         "quotes": [
-          "add the automated grid trading logic"
+          "Método `pending` — consultar ordens abertas do bot (substituindo qualquer chamada incorreta)"
         ]
       },
       "acceptanceCriteria": [
-        "A recurring timer fires at the configured interval when the bot is in a running state",
-        "Each tick fetches the current mid price before recomputing the grid",
-        "Orders outside the current grid range are cancelled before new ones are placed",
-        "Each bot cycle produces activity log entries covering price fetch, cancellations, and placements",
-        "Timer stops when the bot is stopped"
+        "A `pending` query function exists in the backend actor.",
+        "It returns a list/array of open order records from the internal open orders map.",
+        "Any prior incorrect open-order query calls elsewhere in the actor are replaced with the correct map lookup."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Expose a backend query method to retrieve currently open orders so the frontend OpenOrdersPanel can display the live grid state.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "add the automated grid trading logic"
-        ]
-      },
-      "acceptanceCriteria": [
-        "A query method returns the list of open orders with price, side (buy/sell), and size",
-        "OpenOrdersPanel in the frontend successfully fetches and displays these orders",
-        "The returned data is consistent with orders placed by the grid logic"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Update the frontend BotControlPanel to reflect the bot's running/stopped state accurately after the timer-driven loop is wired up, and surface any order placement errors reported by the backend.",
+      "text": "Update the frontend `useQueries.ts` hook to call the backend `pending` method for fetching open orders, replacing any previous incorrect query. Ensure the OpenOrdersPanel continues to display the live list of open bot orders correctly.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-recent"
         ],
         "quotes": [
-          "add the automated grid trading logic"
+          "Método `pending` — consultar ordens abertas do bot"
         ]
       },
       "acceptanceCriteria": [
-        "BotControlPanel shows 'Running' status when the timer loop is active",
-        "BotControlPanel shows 'Stopped' status when the bot is not running",
-        "Order placement errors returned by the backend are displayed as dismissible alerts in BotControlPanel"
+        "The React Query hook for open orders calls the `pending` backend method.",
+        "The OpenOrdersPanel renders the returned open orders without errors.",
+        "Loading, error, and empty states are handled correctly."
       ]
     }
   ],
   "constraints": [
-    "All backend logic must remain in the single main actor (backend/main.mo)",
-    "Do not modify immutable frontend paths: useInternetIdentity.ts, useActor.ts, main.tsx, or components/ui"
+    "All Motoko logic must remain in the single actor in backend/main.mo.",
+    "Do not modify files under frontend/src/hooks/useActor.ts, frontend/src/hooks/useInternetIdentity.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
+    "ICDex integration must use the existing ICDex canister interface already referenced in the project; do not introduce new external dependencies."
   ],
   "nonGoals": [
-    "Manual order entry or cancellation UI (separate feature)",
-    "Support for trading pairs other than ICP/ckUSDT",
-    "External exchange integrations beyond the existing ICDex interface"
+    "Order history / latestFilled display in the dashboard (separate task).",
+    "Manual order placement and cancellation buttons in the dashboard (separate task).",
+    "Balance verification before each bot cycle (separate task).",
+    "Estimated PnL calculation (separate task)."
   ],
   "imageRequirements": {
     "required": [],
