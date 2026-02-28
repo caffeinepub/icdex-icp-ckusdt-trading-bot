@@ -89,12 +89,6 @@ export class ExternalBlob {
         return this;
     }
 }
-export type Time = bigint;
-export interface LogEntry {
-    message: string;
-    timestamp: Time;
-    eventType: string;
-}
 export interface OrderEntry {
     status: OrderStatus;
     side: Side;
@@ -103,13 +97,13 @@ export interface OrderEntry {
     quantity: bigint;
     price: bigint;
 }
-export type OrderId = bigint;
-export interface OpenOrder {
-    side: Side;
-    orderId: bigint;
-    quantity: bigint;
-    price: bigint;
+export type Time = bigint;
+export interface LogEntry {
+    message: string;
+    timestamp: Time;
+    eventType: string;
 }
+export type OrderId = bigint;
 export enum OrderStatus {
     cancelled = "cancelled",
     open = "open",
@@ -131,13 +125,13 @@ export interface backendInterface {
     }>;
     getLastGrid(): Promise<Array<[string, bigint]>>;
     getLastMidPrice(): Promise<bigint>;
-    getOpenOrders(): Promise<Array<OpenOrder>>;
+    getOpenOrders(): Promise<Array<OrderEntry>>;
     getTradeHistory(): Promise<Array<OrderEntry>>;
     setConfig(newInterval: bigint, newSpread: bigint, newOrders: bigint): Promise<void>;
     startBot(): Promise<void>;
     stopBot(): Promise<void>;
 }
-import type { OpenOrder as _OpenOrder, OrderEntry as _OrderEntry, OrderId as _OrderId, OrderStatus as _OrderStatus, Side as _Side, Time as _Time } from "./declarations/backend.did.d.ts";
+import type { OrderEntry as _OrderEntry, OrderId as _OrderId, OrderStatus as _OrderStatus, Side as _Side, Time as _Time } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async cancelAllOpenOrders(): Promise<void> {
@@ -242,7 +236,7 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getOpenOrders(): Promise<Array<OpenOrder>> {
+    async getOpenOrders(): Promise<Array<OrderEntry>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getOpenOrders();
@@ -260,14 +254,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getTradeHistory();
-                return from_candid_vec_n6(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n1(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getTradeHistory();
-            return from_candid_vec_n6(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n1(this._uploadFile, this._downloadFile, result);
         }
     }
     async setConfig(arg0: bigint, arg1: bigint, arg2: bigint): Promise<void> {
@@ -313,37 +307,16 @@ export class Backend implements backendInterface {
         }
     }
 }
-function from_candid_OpenOrder_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OpenOrder): OpenOrder {
+function from_candid_OrderEntry_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OrderEntry): OrderEntry {
     return from_candid_record_n3(_uploadFile, _downloadFile, value);
 }
-function from_candid_OrderEntry_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OrderEntry): OrderEntry {
-    return from_candid_record_n8(_uploadFile, _downloadFile, value);
-}
-function from_candid_OrderStatus_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OrderStatus): OrderStatus {
-    return from_candid_variant_n10(_uploadFile, _downloadFile, value);
-}
-function from_candid_Side_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Side): Side {
+function from_candid_OrderStatus_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OrderStatus): OrderStatus {
     return from_candid_variant_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    side: _Side;
-    orderId: bigint;
-    quantity: bigint;
-    price: bigint;
-}): {
-    side: Side;
-    orderId: bigint;
-    quantity: bigint;
-    price: bigint;
-} {
-    return {
-        side: from_candid_Side_n4(_uploadFile, _downloadFile, value.side),
-        orderId: value.orderId,
-        quantity: value.quantity,
-        price: value.price
-    };
+function from_candid_Side_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Side): Side {
+    return from_candid_variant_n7(_uploadFile, _downloadFile, value);
 }
-function from_candid_record_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     status: _OrderStatus;
     side: _Side;
     orderId: _OrderId;
@@ -359,15 +332,15 @@ function from_candid_record_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint
     price: bigint;
 } {
     return {
-        status: from_candid_OrderStatus_n9(_uploadFile, _downloadFile, value.status),
-        side: from_candid_Side_n4(_uploadFile, _downloadFile, value.side),
+        status: from_candid_OrderStatus_n4(_uploadFile, _downloadFile, value.status),
+        side: from_candid_Side_n6(_uploadFile, _downloadFile, value.side),
         orderId: value.orderId,
         timestamp: value.timestamp,
         quantity: value.quantity,
         price: value.price
     };
 }
-function from_candid_variant_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     cancelled: null;
 } | {
     open: null;
@@ -376,18 +349,15 @@ function from_candid_variant_n10(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): OrderStatus {
     return "cancelled" in value ? OrderStatus.cancelled : "open" in value ? OrderStatus.open : "filled" in value ? OrderStatus.filled : value;
 }
-function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     buy: null;
 } | {
     sell: null;
 }): Side {
     return "buy" in value ? Side.buy : "sell" in value ? Side.sell : value;
 }
-function from_candid_vec_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_OpenOrder>): Array<OpenOrder> {
-    return value.map((x)=>from_candid_OpenOrder_n2(_uploadFile, _downloadFile, x));
-}
-function from_candid_vec_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_OrderEntry>): Array<OrderEntry> {
-    return value.map((x)=>from_candid_OrderEntry_n7(_uploadFile, _downloadFile, x));
+function from_candid_vec_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_OrderEntry>): Array<OrderEntry> {
+    return value.map((x)=>from_candid_OrderEntry_n2(_uploadFile, _downloadFile, x));
 }
 export interface CreateActorOptions {
     agent?: Agent;

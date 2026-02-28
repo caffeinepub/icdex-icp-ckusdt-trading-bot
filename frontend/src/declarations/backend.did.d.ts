@@ -15,12 +15,6 @@ export interface LogEntry {
   'timestamp' : Time,
   'eventType' : string,
 }
-export interface OpenOrder {
-  'side' : Side,
-  'orderId' : bigint,
-  'quantity' : bigint,
-  'price' : bigint,
-}
 export interface OrderEntry {
   'status' : OrderStatus,
   'side' : Side,
@@ -47,7 +41,7 @@ export interface _SERVICE {
   >,
   'getLastGrid' : ActorMethod<[], Array<[string, bigint]>>,
   'getLastMidPrice' : ActorMethod<[], bigint>,
-  'getOpenOrders' : ActorMethod<[], Array<OpenOrder>>,
+  'getOpenOrders' : ActorMethod<[], Array<OrderEntry>>,
   'getTradeHistory' : ActorMethod<[], Array<OrderEntry>>,
   'setConfig' : ActorMethod<[bigint, bigint, bigint], undefined>,
   'startBot' : ActorMethod<[], undefined>,

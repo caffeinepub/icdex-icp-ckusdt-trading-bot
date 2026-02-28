@@ -1,116 +1,60 @@
-import { TrendingUp, RefreshCw, Clock, AlertCircle, Wifi, WifiOff } from 'lucide-react';
-import { useLastMidPrice, useBotStatus } from '@/hooks/useQueries';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useState, useEffect } from 'react';
+import { TrendingUp, RefreshCw } from 'lucide-react';
+import { useLastMidPrice } from '@/hooks/useQueries';
 
-/**
- * ICDex prices are in e8s (10^8 units = 1 token).
- * For ICP/ckUSDT: price represents ckUSDT per ICP, scaled by 10^8.
- * e.g. 1_000_000_000 = 10.00000000 ckUSDT/ICP
- */
-function formatMidPrice(price: bigint): string {
-    const num = Number(price);
-    if (num === 0) return '—';
-    const humanPrice = num / 1e8;
-    if (humanPrice >= 1000) {
-        return humanPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    if (humanPrice >= 1) {
-        return humanPrice.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-    }
-    return humanPrice.toFixed(8);
+function formatPrice(value: bigint): string {
+    const n = Number(value) / 1e8;
+    if (n === 0) return '—';
+    if (n >= 1000) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (n >= 1) return n.toFixed(4);
+    return n.toFixed(8);
 }
 
-function formatRelativeTime(timestamp: number): string {
-    const diffMs = Date.now() - timestamp;
-    const diffSec = Math.floor(diffMs / 1000);
-    if (diffSec < 5) return 'just now';
-    if (diffSec < 60) return `${diffSec}s ago`;
-    const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin}m ago`;
-    return new Date(timestamp).toLocaleTimeString('en-US', { hour12: false });
-}
-
-type PriceStatus = 'live' | 'stale' | 'error' | 'idle';
-
-function getPriceStatus(
-    isError: boolean,
-    hasData: boolean,
-    dataUpdatedAt: number | undefined
-): PriceStatus {
-    if (isError) return 'error';
-    if (!hasData || !dataUpdatedAt) return 'idle';
-    const ageMs = Date.now() - dataUpdatedAt;
-    if (ageMs < 15_000) return 'live';
-    if (ageMs < 30_000) return 'stale';
-    return 'stale';
-}
-
-interface StatusBadgeProps {
-    status: PriceStatus;
-}
-
-function StatusBadge({ status }: StatusBadgeProps) {
-    if (status === 'idle') return null;
-
-    const configs = {
-        live: {
-            label: 'LIVE',
-            className: 'bg-terminal-buy/15 text-terminal-buy border border-terminal-buy/40',
-            dot: 'bg-terminal-buy animate-pulse-buy',
-            icon: <Wifi className="w-2.5 h-2.5" />,
-        },
-        stale: {
-            label: 'STALE',
-            className: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30',
-            dot: 'bg-yellow-400',
-            icon: <Wifi className="w-2.5 h-2.5" />,
-        },
-        error: {
-            label: 'ERROR',
-            className: 'bg-terminal-sell/15 text-terminal-sell border border-terminal-sell/40',
-            dot: 'bg-terminal-sell',
-            icon: <WifiOff className="w-2.5 h-2.5" />,
-        },
-    };
-
-    const cfg = configs[status];
-
-    return (
-        <span
-            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold tracking-widest ${cfg.className}`}
-        >
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
-            {cfg.label}
-        </span>
-    );
+function relativeTime(ms: number): string {
+    const diff = Math.floor((Date.now() - ms) / 1000);
+    if (diff < 5) return 'just now';
+    if (diff < 60) return `${diff}s ago`;
+    const m = Math.floor(diff / 60);
+    return `${m}m ago`;
 }
 
 export function MarketDataPanel() {
-    const { data: midPrice, isLoading, isError, dataUpdatedAt, refetch, isFetching } = useLastMidPrice();
-    const { data: isRunning } = useBotStatus();
+    const { data: midPrice, isLoading, isFetching, isError, refetch, dataUpdatedAt } = useLastMidPrice();
+    const [now, setNow] = useState(Date.now());
 
-    // Tick every second to keep relative time and status fresh
-    const [, setTick] = useState(0);
     useEffect(() => {
-        const id = setInterval(() => setTick((t) => t + 1), 1000);
+        const id = setInterval(() => setNow(Date.now()), 1000);
         return () => clearInterval(id);
     }, []);
 
-    const hasData = midPrice !== undefined && midPrice > BigInt(0);
-    const priceStatus = getPriceStatus(isError, hasData, dataUpdatedAt);
-    const isStale = priceStatus === 'stale';
+    const hasPrice = midPrice !== undefined && midPrice > BigInt(0);
+    const ageMs = dataUpdatedAt ? now - dataUpdatedAt : null;
+    const isStale = ageMs !== null && ageMs > 15_000;
+
+    let statusLabel = 'LIVE';
+    let statusClass = 'text-terminal-buy bg-terminal-buy/10 border-terminal-buy/30';
+    let borderClass = 'border-terminal-buy/20';
+
+    if (isError) {
+        statusLabel = 'ERROR';
+        statusClass = 'text-terminal-sell bg-terminal-sell/10 border-terminal-sell/30';
+        borderClass = 'border-terminal-sell/20';
+    } else if (isStale) {
+        statusLabel = 'STALE';
+        statusClass = 'text-terminal-warning bg-terminal-warning/10 border-terminal-warning/30';
+        borderClass = 'border-terminal-warning/20';
+    }
 
     return (
-        <div className="terminal-border rounded-lg bg-card p-5 flex flex-col gap-4 shadow-terminal">
+        <div className={`terminal-card p-5 flex flex-col gap-4 border ${borderClass} transition-colors duration-500`}>
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs font-mono font-semibold tracking-widest uppercase text-muted-foreground">
-                        Market Data
+                    <span className="terminal-label">Market Data</span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${statusClass}`}>
+                        {statusLabel}
                     </span>
-                    <StatusBadge status={priceStatus} />
                 </div>
                 <button
                     onClick={() => refetch()}
@@ -122,98 +66,51 @@ export function MarketDataPanel() {
                 </button>
             </div>
 
-            {/* Mid Price Display */}
-            <div
-                className={`flex flex-col gap-1 py-3 px-4 rounded border transition-colors ${
-                    isError
-                        ? 'bg-terminal-sell/5 border-terminal-sell/30'
-                        : isStale
-                        ? 'bg-yellow-500/5 border-yellow-500/20'
-                        : hasData
-                        ? 'bg-terminal-buy/5 border-terminal-buy/20'
-                        : 'bg-muted/40 border-border'
-                }`}
-            >
-                <span className="text-xs font-mono text-muted-foreground tracking-widest uppercase">
-                    Mid Price
-                </span>
+            {/* Price display */}
+            <div className="flex flex-col gap-1">
+                <span className="terminal-label">ICP / ckUSDT</span>
                 {isLoading ? (
-                    <Skeleton className="h-8 w-40 bg-muted" />
+                    <div className="h-10 w-40 bg-muted rounded animate-pulse" />
                 ) : isError ? (
-                    <div className="flex items-center gap-2 py-1">
-                        <AlertCircle className="w-5 h-5 text-terminal-sell opacity-70" />
-                        <div className="flex flex-col">
-                            <span className="text-sm font-mono text-terminal-sell">Price fetch failed</span>
-                            <span className="text-xs font-mono text-muted-foreground opacity-70">
-                                Unable to reach ICDex canister
-                            </span>
-                        </div>
-                    </div>
-                ) : hasData ? (
-                    <div className="flex items-baseline gap-2">
-                        <span
-                            className={`text-2xl font-mono font-bold tracking-tight transition-colors ${
-                                isStale ? 'text-yellow-400' : 'text-terminal-neutral'
-                            }`}
-                        >
-                            {formatMidPrice(midPrice!)}
-                        </span>
-                        <span className="text-xs font-mono text-muted-foreground">ckUSDT</span>
-                        {isStale && (
-                            <span className="text-xs font-mono text-yellow-400/70 ml-1">(stale)</span>
-                        )}
-                    </div>
+                    <span className="text-2xl font-mono font-bold text-terminal-sell">—</span>
                 ) : (
-                    <div className="flex items-center gap-2">
-                        <span className="text-xl font-mono font-bold text-muted-foreground">—</span>
-                        <span className="text-xs font-mono text-muted-foreground">
-                            {isRunning ? 'Waiting for first cycle...' : 'Start bot to fetch data'}
-                        </span>
-                    </div>
-                )}
-            </div>
-
-            {/* Pair Info */}
-            <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-0.5 px-3 py-2 rounded bg-muted/20 border border-border">
-                    <span className="text-xs font-mono text-muted-foreground">Pair</span>
-                    <span className="text-sm font-mono font-semibold text-foreground">ICP/ckUSDT</span>
-                </div>
-                <div className="flex flex-col gap-0.5 px-3 py-2 rounded bg-muted/20 border border-border">
-                    <span className="text-xs font-mono text-muted-foreground">Exchange</span>
-                    <span className="text-sm font-mono font-semibold text-foreground">ICDex</span>
-                </div>
-            </div>
-
-            {/* Last Updated */}
-            <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground pt-1 border-t border-border">
-                <Clock
-                    className={`w-3 h-3 ${
-                        priceStatus === 'error'
-                            ? 'text-terminal-sell/60'
-                            : priceStatus === 'stale'
-                            ? 'text-yellow-400/60'
-                            : priceStatus === 'live'
-                            ? 'text-terminal-buy/60'
-                            : ''
-                    }`}
-                />
-                {dataUpdatedAt ? (
-                    <span
-                        className={
-                            priceStatus === 'error'
-                                ? 'text-terminal-sell/70'
-                                : priceStatus === 'stale'
-                                ? 'text-yellow-400/70'
-                                : ''
-                        }
-                    >
-                        Updated {formatRelativeTime(dataUpdatedAt)}
+                    <span className={`text-3xl font-mono font-bold tracking-tight ${hasPrice ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {hasPrice ? formatPrice(midPrice!) : '—'}
                     </span>
-                ) : (
-                    <span>Not yet updated</span>
                 )}
-                <span className="ml-auto opacity-60">auto-refresh 10s</span>
+                {hasPrice && !isError && (
+                    <span className="text-xs font-mono text-muted-foreground">ckUSDT per ICP</span>
+                )}
+            </div>
+
+            {/* Info rows */}
+            <div className="flex flex-col gap-1.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
+                <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-muted-foreground">Mid Price</span>
+                    <span className={hasPrice ? 'text-foreground' : 'text-muted-foreground'}>
+                        {hasPrice ? formatPrice(midPrice!) : '—'}
+                    </span>
+                </div>
+                <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-muted-foreground">Source</span>
+                    <span className="text-muted-foreground opacity-70">ICDex level10</span>
+                </div>
+                <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-muted-foreground">Pair</span>
+                    <span className="text-muted-foreground opacity-70">ICP/ckUSDT</span>
+                </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between text-xs font-mono text-muted-foreground pt-1 border-t border-border">
+                <span>
+                    {dataUpdatedAt
+                        ? `Updated ${relativeTime(dataUpdatedAt)}`
+                        : 'Waiting for data…'}
+                </span>
+                {isFetching && (
+                    <span className="text-terminal-buy/70 animate-pulse">Fetching…</span>
+                )}
             </div>
         </div>
     );

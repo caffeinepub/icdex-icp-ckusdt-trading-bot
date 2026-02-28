@@ -14,18 +14,12 @@ export const LogEntry = IDL.Record({
   'timestamp' : Time,
   'eventType' : IDL.Text,
 });
-export const Side = IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null });
-export const OpenOrder = IDL.Record({
-  'side' : Side,
-  'orderId' : IDL.Nat,
-  'quantity' : IDL.Nat,
-  'price' : IDL.Nat,
-});
 export const OrderStatus = IDL.Variant({
   'cancelled' : IDL.Null,
   'open' : IDL.Null,
   'filled' : IDL.Null,
 });
+export const Side = IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null });
 export const OrderId = IDL.Nat;
 export const OrderEntry = IDL.Record({
   'status' : OrderStatus,
@@ -58,7 +52,7 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getLastMidPrice' : IDL.Func([], [IDL.Nat], ['query']),
-  'getOpenOrders' : IDL.Func([], [IDL.Vec(OpenOrder)], []),
+  'getOpenOrders' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
   'getTradeHistory' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
   'setConfig' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat], [], []),
   'startBot' : IDL.Func([], [], []),
@@ -74,18 +68,12 @@ export const idlFactory = ({ IDL }) => {
     'timestamp' : Time,
     'eventType' : IDL.Text,
   });
-  const Side = IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null });
-  const OpenOrder = IDL.Record({
-    'side' : Side,
-    'orderId' : IDL.Nat,
-    'quantity' : IDL.Nat,
-    'price' : IDL.Nat,
-  });
   const OrderStatus = IDL.Variant({
     'cancelled' : IDL.Null,
     'open' : IDL.Null,
     'filled' : IDL.Null,
   });
+  const Side = IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null });
   const OrderId = IDL.Nat;
   const OrderEntry = IDL.Record({
     'status' : OrderStatus,
@@ -118,7 +106,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getLastMidPrice' : IDL.Func([], [IDL.Nat], ['query']),
-    'getOpenOrders' : IDL.Func([], [IDL.Vec(OpenOrder)], []),
+    'getOpenOrders' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
     'getTradeHistory' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
     'setConfig' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat], [], []),
     'startBot' : IDL.Func([], [], []),

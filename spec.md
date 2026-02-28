@@ -1,14 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Add an activity log feature to the ICDex Grid Bot trading UI so users can monitor bot events and debug issues in real time.
+**Goal:** Add automated grid trading logic to the ICDex Grid Bot backend and update the frontend to reflect live bot state.
 
 **Planned changes:**
-- Add a `getActivityLog` backend query that returns the 100 most recent log entries (timestamp, event type, message) stored in stable state
-- Record bot start/stop, order placement, order cancellation, trade execution, and error events into the log
-- Create an `ActivityLogPanel` frontend component displaying entries with relative timestamps, color-coded event type badges (green for trades, yellow for orders, red for errors, neutral for status), and a "No activity yet" empty state
-- Add a React Query hook in `useQueries.ts` that polls the activity log every 10 seconds
-- Show a loading skeleton on first fetch
-- Integrate `ActivityLogPanel` into the `App.tsx` dashboard grid, visible on desktop without scrolling, below the `TradeHistoryPanel`
+- Implement grid order placement logic in the backend: compute buy/sell grid levels from current mid price, configured spread, and order count, then place limit orders on both sides
+- Implement a periodic timer-driven bot loop that fetches the latest mid price each tick, cancels stale/out-of-range orders, and places new grid orders; loop starts/stops with the bot
+- Expose a backend query method returning open orders (price, side, size) for the frontend
+- Update OpenOrdersPanel to fetch and display live open orders from the backend query method
+- Update BotControlPanel to show accurate Running/Stopped status and display dismissible alerts for order placement errors
 
-**User-visible outcome:** Users can see a live-updating activity log panel on the dashboard showing recent bot events, making it easy to spot errors and track trading activity.
+**User-visible outcome:** When the bot is started, it automatically places and manages a grid of buy/sell limit orders around the current market price on each timer tick. The frontend shows live open orders and reflects the bot's running state, including any errors from order placement.

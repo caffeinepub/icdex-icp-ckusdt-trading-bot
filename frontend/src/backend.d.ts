@@ -7,12 +7,6 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export type Time = bigint;
-export interface LogEntry {
-    message: string;
-    timestamp: Time;
-    eventType: string;
-}
 export interface OrderEntry {
     status: OrderStatus;
     side: Side;
@@ -21,13 +15,13 @@ export interface OrderEntry {
     quantity: bigint;
     price: bigint;
 }
-export type OrderId = bigint;
-export interface OpenOrder {
-    side: Side;
-    orderId: bigint;
-    quantity: bigint;
-    price: bigint;
+export type Time = bigint;
+export interface LogEntry {
+    message: string;
+    timestamp: Time;
+    eventType: string;
 }
+export type OrderId = bigint;
 export enum OrderStatus {
     cancelled = "cancelled",
     open = "open",
@@ -49,7 +43,7 @@ export interface backendInterface {
     }>;
     getLastGrid(): Promise<Array<[string, bigint]>>;
     getLastMidPrice(): Promise<bigint>;
-    getOpenOrders(): Promise<Array<OpenOrder>>;
+    getOpenOrders(): Promise<Array<OrderEntry>>;
     getTradeHistory(): Promise<Array<OrderEntry>>;
     setConfig(newInterval: bigint, newSpread: bigint, newOrders: bigint): Promise<void>;
     startBot(): Promise<void>;

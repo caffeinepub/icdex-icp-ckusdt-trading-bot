@@ -1,51 +1,31 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T13:51:17.016Z",
-  "summary": "The diff implements most of the required functionality: a backend getActivityLog query endpoint with stable storage via migration, an ActivityLogPanel frontend component with color-coded badges, relative timestamps, loading skeletons, empty state, and 10s polling via React Query, and integration into App.tsx. However, several specific acceptance criteria for REQ-1 cannot be fully confirmed from the truncated diff — specifically whether bot start/stop, order placement/cancellation, and error events are actually being logged at the call sites within the trading loop logic in main.mo.",
-  "missing_requirements": [
+  "generatedAt": "2026-02-28T16:56:21.118Z",
+  "summary": "The diff implements most of the required features: backend grid logic in main.mo, timer-driven bot loop, open orders query method, and BotControlPanel updates with running/stopped status and dismissible error alerts. All four REQs appear to be addressed, though the backend is truncated making some AC verifications uncertain.",
+  "missing_requirements": [],
+  "hallucinated_features": [
     {
-      "id": "REQ-1",
-      "requirement": "Bot start and stop events are recorded in the log.",
-      "reason": "The addLogEntry helper is defined in main.mo but the truncated diff does not show the startBot/stopBot public functions calling addLogEntry with 'bot_started'/'bot_stopped' event types. Cannot confirm this AC from visible code.",
+      "description": "useOrderErrors hook and cancellation-based dismissible amber alerts section in BotControlPanel",
+      "reason": "The BotControlPanel imports and uses useOrderErrors for cancel errors, producing a separate amber dismissible alert section for cancellations. The build request only asks for order placement errors to be surfaced as dismissible alerts; cancel-specific error alerts were not requested.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/components/BotControlPanel.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ]
     },
     {
-      "id": "REQ-1",
-      "requirement": "Order placement and cancellation events are recorded with order details.",
-      "reason": "The diff is truncated and does not show the trading loop or order placement/cancellation logic calling addLogEntry. Cannot confirm order events are instrumented.",
+      "description": "Grid capital requirements estimator displayed in BotControlPanel",
+      "reason": "The BotControlPanel includes an estimateGridRequirements function and displays minimum ICP/USDT capital estimates. This was not requested in any requirement or acceptance criterion.",
       "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-1",
-      "requirement": "Errors encountered during the trading loop are recorded with descriptive messages.",
-      "reason": "The trading loop internals are not visible in the truncated diff. Cannot confirm error handling calls addLogEntry with 'error' event type.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-1",
-      "requirement": "Log entries persist across canister upgrades via stable storage.",
-      "reason": "The activityLog is declared as a regular let binding (Queue.empty), not a stable var. The migration module adds activityLog to the new state shape, but without seeing full stable variable declarations in main.mo it is ambiguous whether the queue actually survives upgrades.",
-      "evidence": [
-        "backend/main.mo",
-        "backend/migration.mo"
+        "frontend/src/components/BotControlPanel.tsx"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.62,
+  "confidence": 0.72,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/ActivityLogPanel.tsx",
+    "frontend/src/components/BotControlPanel.tsx",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]

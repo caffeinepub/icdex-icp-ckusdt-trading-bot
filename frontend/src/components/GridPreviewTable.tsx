@@ -1,57 +1,43 @@
-import { LayoutGrid, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
-import { useLastGrid } from '@/hooks/useQueries';
+import { LayoutGrid, RefreshCw, Inbox, AlertCircle } from 'lucide-react';
+import { useLastGrid, useLastMidPrice } from '@/hooks/useQueries';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 
-function formatPrice(price: bigint): string {
-    const num = Number(price);
-    if (num === 0) return '0';
-    if (num > 1_000_000) {
-        return (num / 1_000_000).toFixed(6);
-    }
-    return num.toLocaleString();
+function formatPrice(value: bigint): string {
+    const n = Number(value) / 1e8;
+    if (n === 0) return '0';
+    if (n >= 1000) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (n >= 1) return n.toFixed(4);
+    return n.toFixed(8);
 }
 
 export function GridPreviewTable() {
-    const { data: grid, isLoading, isFetching, refetch, dataUpdatedAt } = useLastGrid();
+    const { data: grid, isLoading, isFetching, isError, refetch, dataUpdatedAt } = useLastGrid();
+    const { data: midPrice } = useLastMidPrice();
 
-    const buyOrders = grid?.filter(([side]) => side === 'buy') ?? [];
-    const sellOrders = grid?.filter(([side]) => side === 'sell') ?? [];
+    const buyOrders = (grid ?? []).filter(([side]) => side === 'buy');
+    const sellOrders = (grid ?? []).filter(([side]) => side === 'sell');
+    const hasData = (grid ?? []).length > 0;
 
-    // Sort: sells descending (highest first), buys descending (closest to mid first)
-    const sortedSells = [...sellOrders].sort((a, b) => Number(b[1]) - Number(a[1]));
-    const sortedBuys = [...buyOrders].sort((a, b) => Number(b[1]) - Number(a[1]));
-    const sortedGrid = [...sortedSells, ...sortedBuys];
-
-    const hasData = grid && grid.length > 0;
     const lastUpdated = dataUpdatedAt
         ? new Date(dataUpdatedAt).toLocaleTimeString('en-US', { hour12: false })
         : null;
 
     return (
-        <div className="terminal-border rounded-lg bg-card p-5 flex flex-col gap-4 shadow-terminal h-full">
+        <div className="terminal-card p-5 flex flex-col gap-4 h-full">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <LayoutGrid className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs font-mono font-semibold tracking-widest uppercase text-muted-foreground">
-                        Grid Preview
-                    </span>
+                    <span className="terminal-label">Grid Preview</span>
                     {hasData && (
-                        <div className="flex items-center gap-1.5 ml-2">
-                            <Badge
-                                variant="outline"
-                                className="text-xs font-mono px-1.5 py-0 h-5 text-terminal-buy border-terminal-buy/40 bg-terminal-buy/10"
-                            >
+                        <div className="flex items-center gap-1.5 ml-1">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-terminal-buy/10 text-terminal-buy border border-terminal-buy/30">
                                 {buyOrders.length} BUY
-                            </Badge>
-                            <Badge
-                                variant="outline"
-                                className="text-xs font-mono px-1.5 py-0 h-5 text-terminal-sell border-terminal-sell/40 bg-terminal-sell/10"
-                            >
+                            </span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-terminal-sell/10 text-terminal-sell border border-terminal-sell/30">
                                 {sellOrders.length} SELL
-                            </Badge>
+                            </span>
                         </div>
                     )}
                 </div>
@@ -65,86 +51,96 @@ export function GridPreviewTable() {
                 </button>
             </div>
 
-            {/* Table */}
+            {/* Content */}
             {isLoading ? (
                 <div className="flex flex-col gap-2">
                     {Array.from({ length: 8 }).map((_, i) => (
-                        <Skeleton key={i} className="h-8 w-full bg-muted" />
+                        <Skeleton key={i} className="h-7 w-full bg-muted" />
                     ))}
                 </div>
-            ) : !hasData ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-                    <LayoutGrid className="w-8 h-8 text-muted-foreground opacity-40" />
+            ) : isError ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+                    <AlertCircle className="w-7 h-7 text-terminal-sell opacity-60" />
                     <div className="flex flex-col gap-1">
-                        <span className="text-sm font-mono text-muted-foreground">No grid data yet</span>
+                        <span className="text-sm font-mono text-terminal-sell">Failed to load grid</span>
+                        <span className="text-xs font-mono text-muted-foreground opacity-70">
+                            Check canister connectivity
+                        </span>
+                    </div>
+                    <button
+                        onClick={() => refetch()}
+                        className="text-xs font-mono text-terminal-buy hover:underline mt-1"
+                    >
+                        Retry
+                    </button>
+                </div>
+            ) : !hasData ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+                    <Inbox className="w-7 h-7 text-muted-foreground opacity-40" />
+                    <div className="flex flex-col gap-1">
+                        <span className="text-sm font-mono text-muted-foreground">No grid data</span>
                         <span className="text-xs font-mono text-muted-foreground opacity-60">
-                            Start the bot and wait for the first trading cycle
+                            Start the bot to generate a grid
                         </span>
                     </div>
                 </div>
             ) : (
-                <ScrollArea className="flex-1 max-h-[420px]">
-                    {/* Table Header */}
-                    <div className="grid grid-cols-[2rem_5rem_1fr] gap-2 px-3 py-2 border-b border-border sticky top-0 bg-card z-10">
-                        <span className="text-xs font-mono text-muted-foreground">#</span>
-                        <span className="text-xs font-mono text-muted-foreground">SIDE</span>
-                        <span className="text-xs font-mono text-muted-foreground text-right">PRICE</span>
+                <ScrollArea className="flex-1 max-h-[380px]">
+                    {/* Mid price marker */}
+                    {midPrice && midPrice > BigInt(0) && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 mb-1 bg-muted/30 border border-border/60 rounded">
+                            <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">Mid</span>
+                            <span className="text-sm font-mono font-semibold text-foreground ml-auto">
+                                {formatPrice(midPrice)}
+                            </span>
+                            <span className="text-[10px] font-mono text-muted-foreground">ckUSDT</span>
+                        </div>
+                    )}
+
+                    {/* Table header */}
+                    <div className="grid grid-cols-[3rem_1fr_3rem] gap-2 px-3 py-1.5 border-b border-border">
+                        <span className="text-[10px] font-mono text-muted-foreground">SIDE</span>
+                        <span className="text-[10px] font-mono text-muted-foreground text-right">PRICE (ckUSDT)</span>
+                        <span className="text-[10px] font-mono text-muted-foreground text-right">#</span>
                     </div>
 
-                    {/* Table Rows */}
-                    <div className="flex flex-col">
-                        {sortedGrid.map(([side, price], index) => {
-                            const isBuy = side === 'buy';
-                            return (
-                                <div
-                                    key={index}
-                                    className={`grid grid-cols-[2rem_5rem_1fr] gap-2 px-3 py-2 border-b border-border/50 transition-colors ${
-                                        isBuy
-                                            ? 'hover:bg-terminal-buy/5'
-                                            : 'hover:bg-terminal-sell/5'
-                                    }`}
-                                >
-                                    {/* Index */}
-                                    <span className="text-xs font-mono text-muted-foreground self-center">
-                                        {String(index + 1).padStart(2, '0')}
-                                    </span>
+                    {/* Sell orders (high → low) */}
+                    {[...sellOrders]
+                        .sort((a, b) => Number(b[1] - a[1]))
+                        .map(([side, price], i) => (
+                            <div
+                                key={`sell-${i}`}
+                                className="grid grid-cols-[3rem_1fr_3rem] gap-2 px-3 py-1.5 border-b border-border/40 hover:bg-terminal-sell/5 transition-colors"
+                            >
+                                <span className="text-xs font-mono font-semibold text-terminal-sell">SELL</span>
+                                <span className="text-xs font-mono text-terminal-sell text-right">{formatPrice(price)}</span>
+                                <span className="text-[10px] font-mono text-muted-foreground text-right">{i + 1}</span>
+                            </div>
+                        ))}
 
-                                    {/* Side Badge */}
-                                    <div className="flex items-center">
-                                        <span
-                                            className={`inline-flex items-center gap-1 text-xs font-mono font-semibold tracking-wider ${
-                                                isBuy ? 'text-terminal-buy' : 'text-terminal-sell'
-                                            }`}
-                                        >
-                                            {isBuy ? (
-                                                <ArrowUp className="w-3 h-3" />
-                                            ) : (
-                                                <ArrowDown className="w-3 h-3" />
-                                            )}
-                                            {isBuy ? 'BUY' : 'SELL'}
-                                        </span>
-                                    </div>
-
-                                    {/* Price */}
-                                    <span
-                                        className={`text-sm font-mono font-medium text-right self-center ${
-                                            isBuy ? 'text-terminal-buy' : 'text-terminal-sell'
-                                        }`}
-                                    >
-                                        {formatPrice(price)}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    {/* Buy orders (high → low) */}
+                    {[...buyOrders]
+                        .sort((a, b) => Number(b[1] - a[1]))
+                        .map(([side, price], i) => (
+                            <div
+                                key={`buy-${i}`}
+                                className="grid grid-cols-[3rem_1fr_3rem] gap-2 px-3 py-1.5 border-b border-border/40 hover:bg-terminal-buy/5 transition-colors"
+                            >
+                                <span className="text-xs font-mono font-semibold text-terminal-buy">BUY</span>
+                                <span className="text-xs font-mono text-terminal-buy text-right">{formatPrice(price)}</span>
+                                <span className="text-[10px] font-mono text-muted-foreground text-right">{i + 1}</span>
+                            </div>
+                        ))}
                 </ScrollArea>
             )}
 
             {/* Footer */}
-            {lastUpdated && hasData && (
-                <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground pt-1 border-t border-border">
-                    <span>Last cycle: {lastUpdated}</span>
-                    <span className="ml-auto opacity-60">{grid?.length ?? 0} orders computed</span>
+            {lastUpdated && (
+                <div className="flex items-center text-xs font-mono text-muted-foreground pt-1 border-t border-border">
+                    <span>Updated: {lastUpdated}</span>
+                    {hasData && (
+                        <span className="ml-auto opacity-60">{(grid ?? []).length} levels</span>
+                    )}
                 </div>
             )}
         </div>

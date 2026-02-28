@@ -1,17 +1,15 @@
-import Array "mo:core/Array";
-import Iter "mo:core/Iter";
 import Map "mo:core/Map";
+import Queue "mo:core/Queue";
+import Timer "mo:core/Timer";
 import Nat "mo:core/Nat";
 import Runtime "mo:core/Runtime";
-import Queue "mo:core/Queue";
-import Order "mo:core/Order";
+import Array "mo:core/Array";
+import VarArray "mo:core/VarArray";
 import Time "mo:core/Time";
-import Timer "mo:core/Timer";
-import Migration "migration";
+import List "mo:core/List";
 
-(with migration = Migration.run)
 actor {
-  // ICDex Types
+  // ICDex Types (no outcalls pendingAll)
   type Side = { #buy; #sell };
   type OrderType = { #limit; #market; #chase; #post_only };
   type OrderId = Nat;
@@ -31,6 +29,7 @@ actor {
     side : Side;
     orderType : OrderType;
   };
+
   type Level = {
     price : Nat;
     quantity : Nat;
@@ -39,13 +38,13 @@ actor {
     bids : [Level];
     asks : [Level];
   };
+
   type Ticker = {
     price : Nat;
     quantity : Nat;
     timestamp : Nat;
   };
 
-  // Persistent Configuration State
   var intervalSeconds : Nat = 60;
   var spreadBps : Nat = 45;
   var numOrders : Nat = 20;
@@ -56,14 +55,8 @@ actor {
   var nextOrderId = 0;
 
   let orderHistoryMap = Map.empty<Nat, OrderEntry>();
+  let openOrderMap = Map.empty<Nat, OrderEntry>();
 
-  module GridEntry {
-    public func compare(a : (Side, Nat), b : (Side, Nat)) : Order.Order {
-      Nat.compare(a.1, b.1);
-    };
-  };
-
-  // ICDex Persistent Interface
   type ICDex = actor {
     placeOrder : shared OrderArgs -> async OrderId;
     cancelOrder : shared { orderId : OrderId } -> async ();
@@ -71,18 +64,8 @@ actor {
     ticker : shared () -> async ?Ticker;
   };
 
-  // ICDex Local Interface with getOpenOrders
-  type ICDexWithOpenOrders = actor {
-    placeOrder : shared OrderArgs -> async OrderId;
-    cancelOrder : shared { orderId : OrderId } -> async ();
-    getLevel10 : shared () -> async Level10;
-    ticker : shared () -> async ?Ticker;
-    getOpenOrders : shared () -> async [OpenOrder];
-  };
-
   let icDex = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDex;
 
-  // Open Order type matching ICDex
   type OpenOrder = {
     orderId : Nat;
     side : Side;
@@ -90,7 +73,6 @@ actor {
     quantity : Nat;
   };
 
-  // Activity Log
   type LogEntry = {
     timestamp : Time.Time;
     eventType : Text;
@@ -100,7 +82,7 @@ actor {
   let activityLog = Queue.empty<LogEntry>();
 
   public query ({ caller }) func getActivityLog() : async [LogEntry] {
-    activityLog.toArray();
+    activityLog.toVarArray<LogEntry>().toArray();
   };
 
   func addLogEntry(eventType : Text, message : Text) {
@@ -110,30 +92,27 @@ actor {
       message;
     };
 
-    // Convert queue to array
-    let logArray = activityLog.toArray();
-
-    // Clear queue
+    let logArray = activityLog.toVarArray().toArray();
     activityLog.clear();
 
-    // If logArray is at or exceeds max size, drop oldest entries and add back to queue
     let maxLogSize = 100;
-    let prunedArray = if (logArray.size() >= maxLogSize) {
-      logArray.sliceToArray(0, logArray.size() - 1);
+    let prunedArray : [LogEntry] = if (logArray.size() >= maxLogSize) {
+      if (logArray.size() > 0) {
+        logArray.sliceToArray(0, logArray.size() - 1);
+      } else {
+        [];
+      };
     } else {
       logArray;
     };
 
-    // Add back pruned entries
     for (log in prunedArray.values()) {
       activityLog.pushBack(log);
     };
 
-    // Add new entry at the end
     activityLog.pushBack(entry);
   };
 
-  // Public Config and Status Endpoints
   public query ({ caller }) func getBotStatus() : async Bool {
     botRunning;
   };
@@ -165,12 +144,25 @@ actor {
     lastMidPrice;
   };
 
+  func sideToText(side : Side) : Text {
+    switch (side) {
+      case (#buy) { "buy" };
+      case (#sell) { "sell" };
+    };
+  };
+
   public query ({ caller }) func getLastGrid() : async [(Text, Nat)] {
-    lastGridData.map(func((side, price)) { (sideToText(side), price) });
+    let gridCopy = lastGridData;
+    gridCopy.map(
+      func((side, price)) {
+        (sideToText(side), price);
+      }
+    );
   };
 
   public query ({ caller }) func getTradeHistory() : async [OrderEntry] {
-    orderHistoryMap.values().toArray();
+    let tradeHistory = orderHistoryMap.values().toVarArray<OrderEntry>().toArray();
+    tradeHistory;
   };
 
   func createOrderId() : Nat {
@@ -179,14 +171,6 @@ actor {
     id;
   };
 
-  func sideToText(side : Side) : Text {
-    switch (side) {
-      case (#buy) { "buy" };
-      case (#sell) { "sell" };
-    };
-  };
-
-  // Bot Control
   public shared ({ caller }) func startBot() : async () {
     if (botRunning) { Runtime.trap("Bot is already running") };
     switch (timerId) {
@@ -209,21 +193,18 @@ actor {
     addLogEntry("bot_stopped", "Bot stopped");
   };
 
-  // Calculate $10 in e8s at current midPrice
   func calculateOrderQuantity(price : Nat) : Nat {
-    let tenDollarsCents = 1_000_000; // 10 USD in cents
-    let priceFloat = price.toInt().toFloat();
-    let quantityInE8s = tenDollarsCents.toFloat() / priceFloat;
-    let quantityInt = quantityInE8s.toInt();
-    if (quantityInt < 0) { return 0 };
+    let tenDollarsCents = 1_000_000; // 10 USD in cents without floating point
+    let priceFloat = price.toInt().toFloat(); // Convert price to float for calculation
+    let quantityInE8s = tenDollarsCents.toFloat() / priceFloat; // Calculate quantity in e8s
+    let quantityInt = quantityInE8s.toInt(); // Convert back to integer
+    if (quantityInt < 0) { Runtime.trap("Order quantity too small at current price") };
     quantityInt.toNat();
   };
 
-  // Trading Loop with Full Order Cancellation
   func tradingLoop() : async () {
     await cancelAllOpenOrders();
-    let icDexWithOpenOrders = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDexWithOpenOrders;
-    let level10 = await icDexWithOpenOrders.getLevel10();
+    let level10 = await icDex.getLevel10();
     let bestBid = level10.bids[0].price;
     let bestAsk = level10.asks[0].price;
     let midPrice = (bestBid + bestAsk) / 2 : Nat;
@@ -251,12 +232,11 @@ actor {
 
     let buyArray = buyGrid.toArray();
     let sellArray = sellGrid.toArray();
-    lastGridData := (buyArray.concat(sellArray)).sort();
+    lastGridData := buyArray.concat(sellArray);
 
     await placeOrders(buyArray.concat(sellArray), midPrice);
   };
 
-  // Place Orders with Dynamic Quantity Calculation and Trade History Logging
   func placeOrders(grid : [(Side, Nat)], price : Nat) : async () {
     let quantity = calculateOrderQuantity(price);
 
@@ -288,29 +268,25 @@ actor {
       };
 
       orderHistoryMap.add(orderId, entry);
+      openOrderMap.add(orderId, entry);
       addLogEntry("order_placed", "Placed " # sideToText(side) # " order at price: " # price.toText() # " with quantity: " # quantity.toText());
     };
   };
 
-  // Cancel One Order Test (new function)
   public shared ({ caller }) func cancelOneOrderTest() : async () {
     let orderId = 0;
     await icDex.cancelOrder({ orderId });
     addLogEntry("order_cancelled", "Cancelled order with ID: " # orderId.toText());
   };
 
-  // Fetch open orders from ICDex canister
-  public shared ({ caller }) func getOpenOrders() : async [OpenOrder] {
-    let icDexWithOpenOrders = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDexWithOpenOrders;
-    await icDexWithOpenOrders.getOpenOrders();
+  public query ({ caller }) func getOpenOrders() : async [OrderEntry] {
+    openOrderMap.values().toArray();
   };
 
-  // Cancel all open orders and update order history
   public shared ({ caller }) func cancelAllOpenOrders() : async () {
     let openOrders = await getOpenOrders();
-    let icDexWithOpenOrders = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDexWithOpenOrders;
     for (order in openOrders.values()) {
-      await icDexWithOpenOrders.cancelOrder({ orderId = order.orderId });
+      await icDex.cancelOrder({ orderId = order.orderId });
       let cancelledTimestamp = Time.now();
       let cancelledEntry = {
         orderId = order.orderId;
@@ -321,6 +297,7 @@ actor {
         timestamp = cancelledTimestamp;
       };
       orderHistoryMap.add(order.orderId, cancelledEntry);
+      openOrderMap.remove(order.orderId);
       addLogEntry("order_cancelled", "Cancelled order with ID: " # order.orderId.toText());
     };
   };

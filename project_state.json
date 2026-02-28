@@ -1,30 +1,16 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Trading bot project on Internet Computer (ICP) using icDex exchange. Bot canister ID: jgxow-pqaaa-aaaar-qahaq-cai. Configured to trade ckUSDT pair. Cycles and ckUSDT have been added to the canister. Bot is deployed (Version 16) and running, but UI shows no trade activity yet. Waiting 24h to observe activity.",
-  "architectural_notes": [
-    "Bot canister ID: jgxow-pqaaa-aaaar-qahaq-cai deployed on Internet Computer",
-    "Bot configured to trade ckUSDT pair on icDex exchange",
-    "Real order sending, cancellation, and live price fetching from icDex still need integration"
-  ],
-  "known_issues": [
-    "UI shows blank/black screen with no trade activity or status information displayed"
-  ],
+  "summary": "Crypto/trading bot dashboard project with automated grid trading logic being implemented.",
+  "architectural_notes": [],
+  "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-add-an-activitylogpanel-frontend-component-that-displays-the-bot-activity-log-fetched-from-the-backend-showing-each-entry-with-its-timestamp-relative-time-event-type-badge-color-coded-green-for-trades-yellow-for-orders-red-for-errors-neutral-for-status-changes-and-message-the-panel-should-auto-refresh-every-10-seconds-using-the-existing-react-query-polling-pattern-from-usequeries-ts-and-display-a-no-activity-yet-empty-state-when-the-log-is-empty",
-      "title": "Add an ActivityLogPanel frontend component that displays the bot activity log fetched from the backend, showing each entry with its timestamp (relative time), event type badge (color-coded: green for trades, yellow for orders, red for errors, neutral for status changes), and message. The panel should auto-refresh every 10 seconds using the existing React Query polling pattern from useQueries.ts and display a 'No activity yet' empty state when the log is empty.",
+      "id": "feature-update-the-frontend-botcontrolpanel-to-reflect-the-bot-s-running-stopped-state-accurately-after-the-timer-driven-loop-is-wired-up-and-surface-any-order-placement-errors-reported-by-the-backend",
+      "title": "Update the frontend BotControlPanel to reflect the bot's running/stopped state accurately after the timer-driven loop is wired up, and surface any order placement errors reported by the backend.",
       "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-integrate-the-activitylogpanel-into-the-main-app-tsx-dashboard-layout-placing-it-below-the-tradehistorypanel-or-in-a-prominent-position-in-the-grid-so-it-is-immediately-visible-without-scrolling-on-desktop-viewports",
-      "title": "Integrate the ActivityLogPanel into the main App.tsx dashboard layout, placing it below the TradeHistoryPanel or in a prominent position in the grid so it is immediately visible without scrolling on desktop viewports.",
-      "reqIds": [
-        "REQ-3"
+        "REQ-4"
       ],
       "version": 1
     }
@@ -32,21 +18,37 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add activity log panel to the UI to display bot events, trades, and errors in real-time",
+      "summary": "Automated grid trading logic",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Add a backend query endpoint that returns a chronological activity log of bot events, including trade executions, order placements, order cancellations, errors, and bot start/stop events. Each log entry should include a timestamp, event type (e.g., 'trade', 'order_placed', 'order_cancelled', 'error', 'bot_started', 'bot_stopped'), and a descriptive message. Store the most recent 100 log entries in stable state.",
+      "summary": "Implement the automated grid order placement logic in the backend: when the bot is running, compute buy and sell grid levels based on the configured spread and order count parameters, then place limit orders on both sides of the current mid price across those grid levels.",
       "reqIds": [
         "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Implement the periodic timer-driven bot loop in the backend: on each timer tick (based on the configured interval), fetch the latest market mid price, recompute the grid, cancel stale or out-of-range orders, and place new grid orders as needed.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Expose a backend query method to retrieve currently open orders so the frontend OpenOrdersPanel can display the live grid state.",
+      "reqIds": [
+        "REQ-3"
       ],
       "status": "pending"
     }
   ],
   "gameProjectType": "none",
-  "projectName": "ICP Trading Bot",
+  "projectName": "ICDex Grid Bot",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

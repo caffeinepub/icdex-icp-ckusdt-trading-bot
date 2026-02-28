@@ -1,77 +1,94 @@
 {
   "kind": "build_request",
-  "title": "Add Activity Log Panel to Trading Bot UI",
+  "title": "Add automated grid trading logic",
   "projectName": "ICDex Grid Bot",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a backend query endpoint that returns a chronological activity log of bot events, including trade executions, order placements, order cancellations, errors, and bot start/stop events. Each log entry should include a timestamp, event type (e.g., 'trade', 'order_placed', 'order_cancelled', 'error', 'bot_started', 'bot_stopped'), and a descriptive message. Store the most recent 100 log entries in stable state.",
+      "text": "Implement the automated grid order placement logic in the backend: when the bot is running, compute buy and sell grid levels based on the configured spread and order count parameters, then place limit orders on both sides of the current mid price across those grid levels.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-recent-1"
+          "msg-4"
         ],
         "quotes": [
-          "Podemos adicionar um pequeno log. De atividades. Na interface. Que ajude a encontrar erros no processo?"
+          "add the automated grid trading logic"
         ]
       },
       "acceptanceCriteria": [
-        "A query function `getActivityLog` returns an array of log entries with timestamp, event type, and message fields.",
-        "Bot start and stop events are recorded in the log.",
-        "Order placement and cancellation events are recorded with order details.",
-        "Errors encountered during the trading loop are recorded with descriptive messages.",
-        "Log is capped at the 100 most recent entries to prevent unbounded growth.",
-        "Log entries persist across canister upgrades via stable storage."
+        "Grid buy and sell levels are calculated from current mid price, configured spread, and order count",
+        "Buy orders are placed below mid price and sell orders above mid price at each grid level",
+        "Placed orders are recorded and retrievable via the open orders query method",
+        "Order placement activity is logged to the activity log",
+        "If the bot is stopped, no orders are placed"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add an ActivityLogPanel frontend component that displays the bot activity log fetched from the backend, showing each entry with its timestamp (relative time), event type badge (color-coded: green for trades, yellow for orders, red for errors, neutral for status changes), and message. The panel should auto-refresh every 10 seconds using the existing React Query polling pattern from useQueries.ts and display a 'No activity yet' empty state when the log is empty.",
-      "target": "frontend",
+      "text": "Implement the periodic timer-driven bot loop in the backend: on each timer tick (based on the configured interval), fetch the latest market mid price, recompute the grid, cancel stale or out-of-range orders, and place new grid orders as needed.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-recent-1"
+          "msg-4"
         ],
         "quotes": [
-          "Podemos adicionar um pequeno log. De atividades. Na interface. Que ajude a encontrar erros no processo?"
+          "add the automated grid trading logic"
         ]
       },
       "acceptanceCriteria": [
-        "ActivityLogPanel renders a scrollable list of log entries sorted by most recent first.",
-        "Each entry displays a relative timestamp, a color-coded event type badge, and a message.",
-        "Error events are visually distinct (red badge) to aid debugging.",
-        "Panel shows a 'No activity yet' empty state when there are no log entries.",
-        "Panel polls the backend every 10 seconds via React Query.",
-        "Loading skeleton is shown while data is being fetched on first load."
+        "A recurring timer fires at the configured interval when the bot is in a running state",
+        "Each tick fetches the current mid price before recomputing the grid",
+        "Orders outside the current grid range are cancelled before new ones are placed",
+        "Each bot cycle produces activity log entries covering price fetch, cancellations, and placements",
+        "Timer stops when the bot is stopped"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Integrate the ActivityLogPanel into the main App.tsx dashboard layout, placing it below the TradeHistoryPanel or in a prominent position in the grid so it is immediately visible without scrolling on desktop viewports.",
-      "target": "frontend",
+      "text": "Expose a backend query method to retrieve currently open orders so the frontend OpenOrdersPanel can display the live grid state.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-recent-1"
+          "msg-4"
+        ],
+        "quotes": [
+          "add the automated grid trading logic"
         ]
       },
       "acceptanceCriteria": [
-        "ActivityLogPanel is rendered in App.tsx as part of the dashboard grid.",
-        "Panel is visible in the main viewport area on desktop without requiring scroll.",
-        "Layout remains responsive on smaller screens."
+        "A query method returns the list of open orders with price, side (buy/sell), and size",
+        "OpenOrdersPanel in the frontend successfully fetches and displays these orders",
+        "The returned data is consistent with orders placed by the grid logic"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Update the frontend BotControlPanel to reflect the bot's running/stopped state accurately after the timer-driven loop is wired up, and surface any order placement errors reported by the backend.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "add the automated grid trading logic"
+        ]
+      },
+      "acceptanceCriteria": [
+        "BotControlPanel shows 'Running' status when the timer loop is active",
+        "BotControlPanel shows 'Stopped' status when the bot is not running",
+        "Order placement errors returned by the backend are displayed as dismissible alerts in BotControlPanel"
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/hooks/useActor.ts, frontend/src/hooks/useInternetIdentity.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
-    "Follow the existing React Query polling pattern in useQueries.ts for the new activity log query hook.",
-    "Activity log storage in the backend must use stable variables to survive canister upgrades."
+    "All backend logic must remain in the single main actor (backend/main.mo)",
+    "Do not modify immutable frontend paths: useInternetIdentity.ts, useActor.ts, main.tsx, or components/ui"
   ],
   "nonGoals": [
-    "Real-time WebSocket or push-based log streaming.",
-    "Log filtering or search functionality.",
-    "Exporting or downloading the activity log.",
-    "Changing the existing trading logic or configuration."
+    "Manual order entry or cancellation UI (separate feature)",
+    "Support for trading pairs other than ICP/ckUSDT",
+    "External exchange integrations beyond the existing ICDex interface"
   ],
   "imageRequirements": {
     "required": [],

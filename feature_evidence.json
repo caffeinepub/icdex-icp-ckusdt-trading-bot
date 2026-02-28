@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-an-activitylogpanel-frontend-component-that-displays-the-bot-activity-log-fetched-from-the-backend-showing-each-entry-with-its-timestamp-relative-time-event-type-badge-color-coded-green-for-trades-yellow-for-orders-red-for-errors-neutral-for-status-changes-and-message-the-panel-should-auto-refresh-every-10-seconds-using-the-existing-react-query-polling-pattern-from-usequeries-ts-and-display-a-no-activity-yet-empty-state-when-the-log-is-empty",
-      "featureTitle": "Add an ActivityLogPanel frontend component that displays the bot activity log fetched from the backend, showing each entry with its timestamp (relative time), event type badge (color-coded: green for trades, yellow for orders, red for errors, neutral for status changes), and message. The panel should auto-refresh every 10 seconds using the existing React Query polling pattern from useQueries.ts and display a 'No activity yet' empty state when the log is empty.",
+      "featureId": "feature-update-the-frontend-botcontrolpanel-to-reflect-the-bot-s-running-stopped-state-accurately-after-the-timer-driven-loop-is-wired-up-and-surface-any-order-placement-errors-reported-by-the-backend",
+      "featureTitle": "Update the frontend BotControlPanel to reflect the bot's running/stopped state accurately after the timer-driven loop is wired up, and surface any order placement errors reported by the backend.",
       "files": [
-        "frontend/src/components/ActivityLogPanel.tsx",
+        "frontend/src/components/BotControlPanel.tsx",
         "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
@@ -16,25 +16,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-integrate-the-activitylogpanel-into-the-main-app-tsx-dashboard-layout-placing-it-below-the-tradehistorypanel-or-in-a-prominent-position-in-the-grid-so-it-is-immediately-visible-without-scrolling-on-desktop-viewports",
-      "featureTitle": "Integrate the ActivityLogPanel into the main App.tsx dashboard layout, placing it below the TradeHistoryPanel or in a prominent position in the grid so it is immediately visible without scrolling on desktop viewports.",
-      "files": [
-        "frontend/src/App.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
+        "REQ-4"
       ],
       "confidence": "high"
     }

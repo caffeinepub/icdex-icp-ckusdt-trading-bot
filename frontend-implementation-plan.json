@@ -1,45 +1,26 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add Activity Log Panel to Trading Bot UI",
+  "title": "Add automated grid trading logic frontend integration",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Add ActivityLogPanel frontend component to display bot activity log with auto-refresh polling",
+      "id": "REQ-4",
+      "summary": "Update BotControlPanel to reflect running/stopped state and display order placement errors",
       "acceptanceCriteria": [
-        "ActivityLogPanel renders a scrollable list of log entries sorted by most recent first.",
-        "Each entry displays a relative timestamp, a color-coded event type badge, and a message.",
-        "Error events are visually distinct (red badge) to aid debugging.",
-        "Panel shows a 'No activity yet' empty state when there are no log entries.",
-        "Panel polls the backend every 10 seconds via React Query.",
-        "Loading skeleton is shown while data is being fetched on first load."
+        "BotControlPanel shows 'Running' status when the timer loop is active",
+        "BotControlPanel shows 'Stopped' status when the bot is not running",
+        "Order placement errors returned by the backend are displayed as dismissible alerts in BotControlPanel"
       ],
       "file_operations": [
+        {
+          "path": "frontend/src/components/BotControlPanel.tsx",
+          "operation": "modify",
+          "description": "Enhance the status display logic to accurately reflect the bot's running state from the backend timer loop. Update the error alert section to handle and display order placement errors specifically (in addition to start/stop errors). Ensure the running/stopped badge updates reactively when the backend timer state changes. Add logic to poll or refresh bot status more frequently when the bot is running to catch state transitions promptly."
+        },
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add a new useActivityLog React Query hook following the existing polling pattern (10-second refetch interval, enabled when actor is available). The hook should call backend.getActivityLog() and return the activity log array with isLoading, isError, error, and refetch properties. Follow the same pattern as useTradeHistory and other existing query hooks."
-        },
-        {
-          "path": "frontend/src/components/ActivityLogPanel.tsx",
-          "operation": "create",
-          "description": "Create a new dashboard panel component that displays the activity log fetched via useActivityLog hook. Render a Card wrapper with title 'Activity Log' and a refresh button. Map over log entries to display each with a relative timestamp (use the same relative time formatting as TradeHistoryPanel), a color-coded badge for eventType (green for 'trade', yellow for 'order_placed' and 'order_cancelled', red for 'error', neutral for 'bot_started' and 'bot_stopped'), and the message text. Show a loading skeleton while isLoading is true. Display 'No activity yet' empty state when the log array is empty. Make the list scrollable with a max height to fit the dashboard grid layout. Use existing shadcn/ui Card, Badge, and Skeleton components for consistency."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Integrate ActivityLogPanel into the main dashboard layout for immediate visibility",
-      "acceptanceCriteria": [
-        "ActivityLogPanel is rendered in App.tsx as part of the dashboard grid.",
-        "Panel is visible in the main viewport area on desktop without requiring scroll.",
-        "Layout remains responsive on smaller screens."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Import ActivityLogPanel and add it to the dashboard grid layout. Place it below TradeHistoryPanel or in a prominent grid position that keeps it visible on desktop viewports without scrolling. Ensure the responsive grid classes maintain usability on smaller screens. Follow the existing grid pattern used for other dashboard panels."
+          "description": "Review and adjust the polling interval for useBotStatus to ensure the frontend receives timely updates when the backend timer loop starts or stops. Consider adding a more aggressive polling strategy (e.g., every 2-3 seconds) when the bot is in a running state to surface order placement errors quickly. Ensure error states from backend mutations are properly surfaced to the UI layer."
         }
       ]
     }

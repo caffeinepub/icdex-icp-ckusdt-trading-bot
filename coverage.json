@@ -1,61 +1,58 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T13:51:17.021Z",
+  "generatedAt": "2026-02-28T16:56:21.120Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 2,
+    "total": 4,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add a backend query endpoint that returns a chronological activity log of bot events, including trade executions, order placements, order cancellations, errors, and bot start/stop events. Each log entry should include a timestamp, event type (e.g., 'trade', 'order_placed', 'order_cancelled', 'error', 'bot_started', 'bot_stopped'), and a descriptive message. Store the most recent 100 log entries in stable state.",
+        "summary": "Implement the automated grid order placement logic in the backend: when the bot is running, compute buy and sell grid levels based on the configured spread and order count parameters, then place limit orders on both sides of the current mid price across those grid levels.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Add an ActivityLogPanel frontend component that displays the bot activity log fetched from the backend, showing each entry with its timestamp (relative time), event type badge (color-coded: green for trades, yellow for orders, red for errors, neutral for status changes), and message. The panel should auto-refresh every 10 seconds using the existing React Query polling pattern from useQueries.ts and display a 'No activity yet' empty state when the log is empty.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/ActivityLogPanel.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/ActivityLogPanel.tsx"
-        ]
+        "summary": "Implement the periodic timer-driven bot loop in the backend: on each timer tick (based on the configured interval), fetch the latest market mid price, recompute the grid, cancel stale or out-of-range orders, and place new grid orders as needed.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Integrate the ActivityLogPanel into the main App.tsx dashboard layout, placing it below the TradeHistoryPanel or in a prominent position in the grid so it is immediately visible without scrolling on desktop viewports.",
+        "summary": "Expose a backend query method to retrieve currently open orders so the frontend OpenOrdersPanel can display the live grid state.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Update the frontend BotControlPanel to reflect the bot's running/stopped state accurately after the timer-driven loop is wired up, and surface any order placement errors reported by the backend.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/App.tsx"
+          "frontend/src/components/BotControlPanel.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/App.tsx"
+          "frontend/src/components/BotControlPanel.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/ActivityLogPanel.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
+    "frontend/src/components/BotControlPanel.tsx",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",

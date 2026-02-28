@@ -17,7 +17,7 @@ export default {
         extend: {
             fontFamily: {
                 mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'monospace'],
-                sans: ['Inter', 'system-ui', 'sans-serif'],
+                sans: ['JetBrains Mono', 'system-ui', 'sans-serif'],
             },
             colors: {
                 border: 'oklch(var(--border))',
@@ -76,6 +76,7 @@ export default {
                     neutral: 'oklch(var(--neutral))',
                     running: 'oklch(var(--running))',
                     stopped: 'oklch(var(--stopped))',
+                    warning: 'oklch(var(--warning))',
                 }
             },
             borderRadius: {
@@ -85,9 +86,9 @@ export default {
             },
             boxShadow: {
                 xs: '0 1px 2px 0 rgba(0,0,0,0.05)',
-                'terminal': '0 0 0 1px oklch(0.26 0.01 240), 0 4px 24px oklch(0 0 0 / 0.4)',
-                'buy-glow': '0 0 16px oklch(0.75 0.18 145 / 0.25)',
-                'sell-glow': '0 0 16px oklch(0.62 0.22 25 / 0.25)',
+                terminal: '0 0 0 1px oklch(0.25 0.010 240), 0 4px 24px oklch(0 0 0 / 0.45)',
+                'buy-glow': '0 0 16px oklch(0.74 0.19 145 / 0.3)',
+                'sell-glow': '0 0 16px oklch(0.60 0.22 25 / 0.3)',
             },
             keyframes: {
                 'accordion-down': {
@@ -100,11 +101,15 @@ export default {
                 },
                 'pulse-buy': {
                     '0%, 100%': { opacity: '1' },
-                    '50%': { opacity: '0.5' }
+                    '50%': { opacity: '0.4' }
                 },
                 'blink': {
                     '0%, 100%': { opacity: '1' },
                     '50%': { opacity: '0' }
+                },
+                'fade-in': {
+                    from: { opacity: '0', transform: 'translateY(4px)' },
+                    to: { opacity: '1', transform: 'translateY(0)' }
                 }
             },
             animation: {
@@ -112,6 +117,7 @@ export default {
                 'accordion-up': 'accordion-up 0.2s ease-out',
                 'pulse-buy': 'pulse-buy 2s ease-in-out infinite',
                 'blink': 'blink 1s step-end infinite',
+                'fade-in': 'fade-in 0.3s ease-out',
             }
         }
     },

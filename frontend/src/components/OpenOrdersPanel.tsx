@@ -1,81 +1,55 @@
-import { ListOrdered, RefreshCw, ArrowUp, ArrowDown, AlertCircle, Inbox } from 'lucide-react';
+import { ListOrdered, RefreshCw, Inbox, AlertCircle } from 'lucide-react';
 import { useOpenOrders } from '@/hooks/useQueries';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { Side } from '@/backend';
 
-/**
- * ICDex prices and quantities are in e8s (10^8 units = 1 token).
- * Price: ckUSDT per ICP, scaled by 10^8. e.g. 1_000_000_000 = 10.00 ckUSDT/ICP
- * Quantity: ICP amount scaled by 10^8. e.g. 100_000_000 = 1.00 ICP
- */
 function formatPrice(value: bigint): string {
-    const num = Number(value);
-    if (num === 0) return '0';
-    const humanPrice = num / 1e8;
-    if (humanPrice >= 1000) {
-        return humanPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    if (humanPrice >= 1) {
-        return humanPrice.toFixed(4);
-    }
-    return humanPrice.toFixed(8);
+    const n = Number(value) / 1e8;
+    if (n === 0) return '0';
+    if (n >= 1000) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (n >= 1) return n.toFixed(4);
+    return n.toFixed(8);
 }
 
-function formatQuantity(value: bigint): string {
-    const num = Number(value);
-    if (num === 0) return '0';
-    const humanQty = num / 1e8;
-    if (humanQty >= 1000) {
-        return humanQty.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    if (humanQty >= 0.01) {
-        return humanQty.toFixed(4);
-    }
-    return humanQty.toFixed(8);
-}
-
-function formatOrderId(orderId: bigint): string {
-    const s = String(orderId);
-    // Show last 6 chars if long, otherwise full
-    return s.length > 6 ? `…${s.slice(-6)}` : s;
+function formatQty(value: bigint): string {
+    const n = Number(value) / 1e8;
+    if (n === 0) return '0';
+    if (n >= 0.01) return n.toFixed(4);
+    return n.toFixed(8);
 }
 
 export function OpenOrdersPanel() {
     const { data: orders, isLoading, isFetching, isError, refetch, dataUpdatedAt } = useOpenOrders();
 
-    const buyOrders = orders?.filter((o) => o.side === Side.buy) ?? [];
-    const sellOrders = orders?.filter((o) => o.side === Side.sell) ?? [];
-    const hasData = orders && orders.length > 0;
+    const buyOrders = (orders ?? []).filter((o) => o.side === 'buy');
+    const sellOrders = (orders ?? []).filter((o) => o.side === 'sell');
+    const hasData = (orders ?? []).length > 0;
 
     const lastUpdated = dataUpdatedAt
         ? new Date(dataUpdatedAt).toLocaleTimeString('en-US', { hour12: false })
         : null;
 
+    // Sort: sells high→low, then buys high→low
+    const sortedOrders = [
+        ...[...sellOrders].sort((a, b) => Number(b.price - a.price)),
+        ...[...buyOrders].sort((a, b) => Number(b.price - a.price)),
+    ];
+
     return (
-        <div className="terminal-border rounded-lg bg-card p-5 flex flex-col gap-4 shadow-terminal h-full">
+        <div className="terminal-card p-5 flex flex-col gap-4 h-full">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <ListOrdered className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-xs font-mono font-semibold tracking-widest uppercase text-muted-foreground">
-                        Open Orders
-                    </span>
+                    <span className="terminal-label">Open Orders</span>
                     {hasData && (
-                        <div className="flex items-center gap-1.5 ml-2">
-                            <Badge
-                                variant="outline"
-                                className="text-xs font-mono px-1.5 py-0 h-5 text-terminal-buy border-terminal-buy/40 bg-terminal-buy/10"
-                            >
+                        <div className="flex items-center gap-1.5 ml-1">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-terminal-buy/10 text-terminal-buy border border-terminal-buy/30">
                                 {buyOrders.length} BUY
-                            </Badge>
-                            <Badge
-                                variant="outline"
-                                className="text-xs font-mono px-1.5 py-0 h-5 text-terminal-sell border-terminal-sell/40 bg-terminal-sell/10"
-                            >
+                            </span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-terminal-sell/10 text-terminal-sell border border-terminal-sell/30">
                                 {sellOrders.length} SELL
-                            </Badge>
+                            </span>
                         </div>
                     )}
                 </div>
@@ -101,13 +75,13 @@ export function OpenOrdersPanel() {
                     <AlertCircle className="w-7 h-7 text-terminal-sell opacity-60" />
                     <div className="flex flex-col gap-1">
                         <span className="text-sm font-mono text-terminal-sell">Failed to fetch orders</span>
-                        <span className="text-xs font-mono text-muted-foreground opacity-60">
-                            Check canister connectivity and try again
+                        <span className="text-xs font-mono text-muted-foreground opacity-70">
+                            Check canister connectivity
                         </span>
                     </div>
                     <button
                         onClick={() => refetch()}
-                        className="text-xs font-mono text-terminal-buy hover:text-terminal-buy/80 transition-colors mt-1"
+                        className="text-xs font-mono text-terminal-buy hover:underline mt-1"
                     >
                         Retry
                     </button>
@@ -118,86 +92,61 @@ export function OpenOrdersPanel() {
                     <div className="flex flex-col gap-1">
                         <span className="text-sm font-mono text-muted-foreground">No open orders</span>
                         <span className="text-xs font-mono text-muted-foreground opacity-60">
-                            No active orders found on ICDex
+                            Active grid orders will appear here
                         </span>
                     </div>
                 </div>
             ) : (
-                <ScrollArea className="flex-1 max-h-[420px]">
-                    {/* Table Header */}
-                    <div className="grid grid-cols-[4.5rem_4.5rem_1fr_1fr] gap-2 px-3 py-2 border-b border-border sticky top-0 bg-card z-10">
-                        <span className="text-xs font-mono text-muted-foreground">ORDER ID</span>
-                        <span className="text-xs font-mono text-muted-foreground">SIDE</span>
-                        <span className="text-xs font-mono text-muted-foreground text-right">PRICE (ckUSDT)</span>
-                        <span className="text-xs font-mono text-muted-foreground text-right">QTY (ICP)</span>
+                <ScrollArea className="flex-1 max-h-[380px]">
+                    {/* Table header */}
+                    <div className="grid grid-cols-[4.5rem_3rem_1fr_1fr] gap-2 px-3 py-1.5 border-b border-border sticky top-0 bg-card z-10">
+                        <span className="text-[10px] font-mono text-muted-foreground">ORDER ID</span>
+                        <span className="text-[10px] font-mono text-muted-foreground">SIDE</span>
+                        <span className="text-[10px] font-mono text-muted-foreground text-right">PRICE (ckUSDT)</span>
+                        <span className="text-[10px] font-mono text-muted-foreground text-right">QTY (ICP)</span>
                     </div>
 
-                    {/* Sell orders first (descending price), then buy orders (descending price) */}
-                    <div className="flex flex-col">
-                        {[
-                            ...sellOrders.sort((a, b) => Number(b.price - a.price)),
-                            ...buyOrders.sort((a, b) => Number(b.price - a.price)),
-                        ].map((order) => {
-                            const isBuy = order.side === Side.buy;
-                            return (
-                                <div
-                                    key={String(order.orderId)}
-                                    className={`grid grid-cols-[4.5rem_4.5rem_1fr_1fr] gap-2 px-3 py-2 border-b border-border/50 transition-colors ${
-                                        isBuy
-                                            ? 'hover:bg-terminal-buy/5'
-                                            : 'hover:bg-terminal-sell/5'
+                    {sortedOrders.map((order) => {
+                        const isBuy = order.side === 'buy';
+                        return (
+                            <div
+                                key={String(order.orderId)}
+                                className={`grid grid-cols-[4.5rem_3rem_1fr_1fr] gap-2 px-3 py-2 border-b border-border/40 transition-colors ${
+                                    isBuy ? 'hover:bg-terminal-buy/5' : 'hover:bg-terminal-sell/5'
+                                }`}
+                            >
+                                <span className="text-[10px] font-mono text-muted-foreground self-center truncate">
+                                    #{String(order.orderId)}
+                                </span>
+                                <span
+                                    className={`text-xs font-mono font-semibold self-center ${
+                                        isBuy ? 'text-terminal-buy' : 'text-terminal-sell'
                                     }`}
                                 >
-                                    {/* Order ID */}
-                                    <span
-                                        className="text-xs font-mono text-muted-foreground self-center truncate"
-                                        title={String(order.orderId)}
-                                    >
-                                        {formatOrderId(order.orderId)}
-                                    </span>
-
-                                    {/* Side Badge */}
-                                    <div className="flex items-center">
-                                        <span
-                                            className={`inline-flex items-center gap-1 text-xs font-mono font-semibold tracking-wider ${
-                                                isBuy ? 'text-terminal-buy' : 'text-terminal-sell'
-                                            }`}
-                                        >
-                                            {isBuy ? (
-                                                <ArrowUp className="w-3 h-3" />
-                                            ) : (
-                                                <ArrowDown className="w-3 h-3" />
-                                            )}
-                                            {isBuy ? 'BUY' : 'SELL'}
-                                        </span>
-                                    </div>
-
-                                    {/* Price */}
-                                    <span
-                                        className={`text-sm font-mono font-medium text-right self-center ${
-                                            isBuy ? 'text-terminal-buy' : 'text-terminal-sell'
-                                        }`}
-                                    >
-                                        {formatPrice(order.price)}
-                                    </span>
-
-                                    {/* Quantity */}
-                                    <span className="text-sm font-mono text-right self-center text-foreground/80">
-                                        {formatQuantity(order.quantity)}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
+                                    {isBuy ? 'BUY' : 'SELL'}
+                                </span>
+                                <span
+                                    className={`text-xs font-mono text-right self-center ${
+                                        isBuy ? 'text-terminal-buy' : 'text-terminal-sell'
+                                    }`}
+                                >
+                                    {formatPrice(order.price)}
+                                </span>
+                                <span className="text-xs font-mono text-right self-center text-foreground/80">
+                                    {formatQty(order.quantity)}
+                                </span>
+                            </div>
+                        );
+                    })}
                 </ScrollArea>
             )}
 
             {/* Footer */}
             {lastUpdated && (
-                <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground pt-1 border-t border-border">
+                <div className="flex items-center text-xs font-mono text-muted-foreground pt-1 border-t border-border">
                     <span>Updated: {lastUpdated}</span>
                     {hasData && (
-                        <span className="ml-auto opacity-60">{orders?.length ?? 0} total orders</span>
+                        <span className="ml-auto opacity-60">{(orders ?? []).length} orders</span>
                     )}
                 </div>
             )}
