@@ -1,42 +1,110 @@
 {
   "kind": "build_request",
-  "title": "Cancel all open orders before repositioning grid each cycle",
-  "projectName": "ICDex Grid Bot",
-  "priority": "normal",
+  "title": "Activate live trading functions for icDex ICP/ckUSDT bot",
+  "projectName": "icDex Grid Bot",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-17",
-      "text": "In the backend trading loop (tradingLoop() in backend/main.mo), before placing new grid orders each cycle, unconditionally cancel ALL currently open orders by calling the ICDex canister's cancelOrder() for each open order fetched via getOpenOrders(). Only after all cancellations are complete should the new grid orders be placed. No comparison logic, no selective cancellation — cancel every open order on every cycle before repositioning.",
+      "id": "REQ-1",
+      "text": "Implement real order placement on icDex: wire the backend grid trading logic to actually submit buy and sell limit orders to the icDex DEX canister for the ICP/ckUSDT pair, replacing any stub or simulated order logic.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-last"
+          "msg-8"
         ],
         "quotes": [
-          "Cancelar todas antigas antes de Reposicionar.",
-          "cancel-all, depois place-all"
+          "Precisamos ativar as funcoes finais.. para fazermos o primeiro teste com ativos reais"
         ]
       },
       "acceptanceCriteria": [
-        "Every open order is cancelled at the start of each tradingLoop() cycle before any new order is placed.",
-        "No stale orders accumulate across cycles.",
-        "After cancellation completes, the new grid orders are placed using the dynamic $10/midPrice quantity formula.",
-        "No smart comparison logic or selective cancellation is introduced — the cancel-all approach is unconditional.",
-        "The trading loop continues to function correctly (fetch mid-price → compute grid → cancel all → place all)."
+        "When the bot is started, it calls the icDex canister's order placement endpoint with computed grid buy/sell prices and quantities.",
+        "Orders appear in the Open Orders panel reflecting actual on-chain orders.",
+        "If an order placement call fails, the error is logged and surfaced without crashing the bot timer."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Implement real order cancellation on icDex: before placing a new grid of orders on each interval tick, cancel all previously placed open orders via the icDex canister so stale orders do not accumulate.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-8"
+        ],
+        "quotes": [
+          "Precisamos ativar as funcoes finais.. para fazermos o primeiro teste com ativos reais"
+        ]
+      },
+      "acceptanceCriteria": [
+        "On each timer tick, existing open orders tracked by the bot are cancelled on icDex before new orders are submitted.",
+        "The Open Orders panel shows only the current grid's orders after each refresh.",
+        "Cancellation errors are handled gracefully and do not prevent the new grid from being placed."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Fetch the live mid price from the icDex ICP/ckUSDT order book canister instead of using a placeholder or hardcoded value, so grid prices are anchored to the real market.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-8"
+        ],
+        "quotes": [
+          "No par icp/ckusdt"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The backend queries the icDex canister for the current best bid/ask or last trade price for ICP/ckUSDT.",
+        "The MarketDataPanel displays this live price, refreshed on each bot tick and on manual refresh.",
+        "A failure to fetch the price halts order placement for that tick and reports an error."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Add a pre-flight balance check: before placing orders, query the user's ICP and ckUSDT token balances on-chain and verify they are sufficient to cover the configured grid. Display the available balances in the dashboard.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-8"
+        ],
+        "quotes": [
+          "primeiro teste com ativos reais"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The backend exposes a query endpoint returning current ICP and ckUSDT balances for the bot's principal.",
+        "The frontend displays both balances in a dedicated panel or within the BotControlPanel.",
+        "If balances are insufficient for the configured grid, the Start button is disabled and an explanatory message is shown."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Add a transaction/order history log: persist a list of all orders placed and cancelled by the bot (timestamp, side, price, quantity, status) in stable storage and expose it via a query endpoint. Display this log in a new Trade History panel on the frontend.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-8"
+        ],
+        "quotes": [
+          "primeiro teste com ativos reais"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Each placed and cancelled order is appended to a stable array in the backend with at least: timestamp, side (buy/sell), price, quantity, and status (placed/cancelled/failed).",
+        "A new Trade History panel on the dashboard renders this list, most recent first.",
+        "The log survives canister upgrades via stable storage."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any frontend files.",
-    "Do not introduce smart/selective grid comparison logic — cancel ALL open orders unconditionally each cycle.",
-    "Preserve existing dynamic order quantity calculation: quantity = 10 / midPrice.",
-    "Do not change existing public API functions (getBotStatus, getConfig, setConfig, getLastMidPrice, getLastGrid, getOpenOrders, getIcpBalance, getCkUsdtBalance)."
+    "All Motoko logic must remain in the single backend/main.mo actor.",
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
+    "Use the existing terminal-dark visual theme defined in frontend/src/index.css and tailwind.config.js — do not change the design language."
   ],
   "nonGoals": [
-    "Smart grid repositioning (cancel only out-of-range orders).",
-    "Frontend changes of any kind.",
-    "Changes to order quantity calculation.",
-    "Any new public query or update functions."
+    "Supporting trading pairs other than ICP/ckUSDT.",
+    "Integrating with any exchange other than icDex.",
+    "Implementing a market-making strategy beyond the existing grid logic.",
+    "Adding user authentication beyond what is already provided by Internet Identity."
   ],
   "imageRequirements": {
     "required": [],

@@ -4,6 +4,7 @@ import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { MarketDataPanel } from './components/MarketDataPanel';
 import { GridPreviewTable } from './components/GridPreviewTable';
 import { OpenOrdersPanel } from './components/OpenOrdersPanel';
+import { TradeHistoryPanel } from './components/TradeHistoryPanel';
 
 function Header() {
     return (
@@ -34,10 +35,10 @@ function Header() {
                     <div className="flex items-center gap-4">
                         <div className="hidden md:flex items-center gap-1.5 text-xs font-mono text-muted-foreground">
                             <span className="w-1.5 h-1.5 rounded-full bg-terminal-buy animate-pulse-buy" />
-                            <span>Validation Mode</span>
+                            <span>Live Trading</span>
                         </div>
                         <div className="text-xs font-mono text-muted-foreground opacity-60">
-                            v0.1.0
+                            v1.0.0
                         </div>
                     </div>
                 </div>
@@ -58,7 +59,7 @@ function Footer() {
                     <div className="flex items-center gap-1.5">
                         <span>© {year} ICDex Grid Bot</span>
                         <span className="opacity-40">·</span>
-                        <span className="text-terminal-sell/60">Validation Phase — No real orders</span>
+                        <span className="text-terminal-buy/70">Live Trading — ICP/ckUSDT on ICDex</span>
                     </div>
                     <div className="flex items-center gap-1">
                         <span>Built with</span>
@@ -79,16 +80,19 @@ function Footer() {
     );
 }
 
-function StatusBar() {
+function LiveBanner() {
     return (
-        <div className="bg-muted/20 border-b border-border px-4 sm:px-6 lg:px-8 py-1.5">
-            <div className="max-w-7xl mx-auto flex items-center gap-4 text-xs font-mono text-muted-foreground">
-                <span className="text-terminal-sell/80 font-semibold tracking-wider">
-                    ⚠ VALIDATION MODE
+        <div className="bg-terminal-buy/10 border-b border-terminal-buy/30 px-4 sm:px-6 lg:px-8 py-1.5">
+            <div className="max-w-7xl mx-auto flex items-center gap-4 text-xs font-mono">
+                <span className="text-terminal-buy font-semibold tracking-wider flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-terminal-buy animate-pulse-buy inline-block" />
+                    LIVE TRADING ENABLED
                 </span>
-                <span className="opacity-50">|</span>
-                <span>No real orders will be placed or cancelled in this phase</span>
-                <span className="ml-auto opacity-50 hidden sm:block">
+                <span className="text-muted-foreground opacity-50">|</span>
+                <span className="text-muted-foreground">
+                    Real orders will be placed and cancelled on ICDex. Ensure sufficient ICP and ckUSDT balances before starting.
+                </span>
+                <span className="ml-auto opacity-50 hidden sm:block text-muted-foreground">
                     Canister: jgxow-pqaaa-aaaar-qahaq-cai
                 </span>
             </div>
@@ -100,7 +104,7 @@ export default function App() {
     return (
         <div className="min-h-screen flex flex-col bg-background">
             <Header />
-            <StatusBar />
+            <LiveBanner />
 
             <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
                 {/* Top row: Control + Config + Market Data */}
@@ -111,9 +115,14 @@ export default function App() {
                 </div>
 
                 {/* Middle row: Grid Preview + Open Orders */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
                     <GridPreviewTable />
                     <OpenOrdersPanel />
+                </div>
+
+                {/* Bottom row: Trade History (full width) */}
+                <div className="grid grid-cols-1 gap-4">
+                    <TradeHistoryPanel />
                 </div>
             </main>
 

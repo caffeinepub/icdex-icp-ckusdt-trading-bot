@@ -1,10 +1,32 @@
 import { useState } from 'react';
-import { Play, Square, Activity, AlertCircle, Loader2 } from 'lucide-react';
+import { Play, Square, Activity, AlertCircle, Loader2, Wallet, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useBotStatus, useStartBot, useStopBot } from '@/hooks/useQueries';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useBotStatus, useStartBot, useStopBot, useConfig, useLastMidPrice } from '@/hooks/useQueries';
+
+/**
+ * Estimate the minimum ICP and ckUSDT needed for the configured grid.
+ * Each order is ~$10 worth of ICP. Half orders are buys (need ckUSDT), half are sells (need ICP).
+ * Price is in e8s (divide by 1e8 to get human price).
+ */
+function estimateGridRequirements(
+    numOrders: bigint,
+    midPrice: bigint
+): { minIcp: number; minUsdt: number } {
+    const halfOrders = Number(numOrders) / 2;
+    const humanPrice = Number(midPrice) / 1e8;
+    if (humanPrice === 0) return { minIcp: 0, minUsdt: 0 };
+    // Each order is ~$10 worth of ICP
+    const icpPerOrder = 10 / humanPrice;
+    const minIcp = icpPerOrder * halfOrders;
+    const minUsdt = 10 * halfOrders;
+    return { minIcp, minUsdt };
+}
 
 export function BotControlPanel() {
     const { data: isRunning, isLoading: statusLoading, error: statusError } = useBotStatus();
+    const { data: config } = useConfig();
+    const { data: midPrice } = useLastMidPrice();
     const startBot = useStartBot();
     const stopBot = useStopBot();
     const [actionError, setActionError] = useState<string | null>(null);
@@ -28,6 +50,12 @@ export function BotControlPanel() {
     };
 
     const isPending = startBot.isPending || stopBot.isPending;
+
+    // Compute grid requirements for informational display
+    const numOrders = config?.numOrders ?? BigInt(20);
+    const currentMidPrice = midPrice ?? BigInt(0);
+    const { minIcp, minUsdt } = estimateGridRequirements(numOrders, currentMidPrice);
+    const hasPriceData = currentMidPrice > BigInt(0);
 
     return (
         <div className="terminal-border rounded-lg bg-card p-5 flex flex-col gap-4 shadow-terminal">
@@ -66,9 +94,45 @@ export function BotControlPanel() {
                         {statusLoading ? 'LOADING...' : isRunning ? 'RUNNING' : 'STOPPED'}
                     </span>
                     <span className="text-xs text-muted-foreground font-mono">
-                        {isRunning ? 'Trading loop active' : 'Bot is idle'}
+                        {isRunning ? 'Trading loop active — live orders' : 'Bot is idle'}
                     </span>
                 </div>
+            </div>
+
+            {/* Grid Requirements Info */}
+            <div className="flex flex-col gap-2 px-3 py-2.5 rounded bg-muted/20 border border-border">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                    <Wallet className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs font-mono text-muted-foreground tracking-wider uppercase">
+                        Grid Requirements
+                    </span>
+                </div>
+                {!hasPriceData ? (
+                    <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground">
+                        <Info className="w-3 h-3 shrink-0" />
+                        <span>Start bot once to fetch live price and compute requirements</span>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="flex flex-col gap-0.5">
+                            <span className="text-xs font-mono text-muted-foreground">Min ICP (sells)</span>
+                            <span className="text-sm font-mono font-semibold text-terminal-sell">
+                                {minIcp.toFixed(4)} ICP
+                            </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                            <span className="text-xs font-mono text-muted-foreground">Min ckUSDT (buys)</span>
+                            <span className="text-sm font-mono font-semibold text-terminal-buy">
+                                {minUsdt.toFixed(2)} ckUSDT
+                            </span>
+                        </div>
+                        <div className="col-span-2">
+                            <span className="text-xs font-mono text-muted-foreground opacity-70">
+                                Based on {Number(numOrders)} orders × ~$10/order at current price
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Action Buttons */}
@@ -112,7 +176,7 @@ export function BotControlPanel() {
             {/* Canister Info */}
             <div className="pt-1 border-t border-border">
                 <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
-                    <span>Canister</span>
+                    <span>ICDex Canister</span>
                     <span className="text-xs tracking-tight opacity-70">jgxow-pqaaa-aaaar-qahaq-cai</span>
                 </div>
             </div>

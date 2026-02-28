@@ -1,6 +1,52 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Cancel all open orders before repositioning grid each cycle",
-  "requirements": []
+  "title": "Activate live trading functions for icDex ICP/ckUSDT bot",
+  "requirements": [
+    {
+      "id": "REQ-4",
+      "summary": "Display live ICP and ckUSDT balances with pre-flight checks for grid trading",
+      "acceptanceCriteria": [
+        "The frontend displays both ICP and ckUSDT balances in the BotControlPanel or a dedicated panel",
+        "If balances are insufficient for the configured grid, the Start button is disabled and an explanatory message is shown"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a new React Query hook useBalances that fetches ICP and ckUSDT balances from the backend getBalances method. Include refetch on actor change and a manual refetch function. Follow the existing query pattern used for other backend data."
+        },
+        {
+          "path": "frontend/src/components/BotControlPanel.tsx",
+          "operation": "modify",
+          "description": "Integrate the useBalances hook to fetch and display current ICP and ckUSDT balances. Add balance display UI with formatted token amounts. Implement logic to disable the Start button when balances are insufficient for the configured grid (compare against grid requirements). Show an explanatory warning message when balances are too low. Maintain the existing terminal-dark theme and layout structure."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Display complete trade history log of all bot orders",
+      "acceptanceCriteria": [
+        "A new Trade History panel on the dashboard renders the order log, most recent first",
+        "Each entry shows timestamp, side (buy/sell), price, quantity, and status (placed/cancelled/failed)"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a new React Query hook useTradeHistory that calls the backend getTradeHistory method (already exposed in backend interface). Include refetch on actor change, manual refetch capability, and proper type mapping for OrderEntry array. Follow existing query patterns."
+        },
+        {
+          "path": "frontend/src/components/TradeHistoryPanel.tsx",
+          "operation": "create",
+          "description": "Create a new panel component that fetches trade history via useTradeHistory hook. Render a scrollable table displaying OrderEntry records sorted by timestamp descending (most recent first). Show columns for timestamp (formatted as relative time), side (buy/sell with color-coded badges using terminal-green-500 for buy and terminal-red-500 for sell), price (formatted from e8s), quantity (formatted from e8s), and status (cancelled/open/filled with appropriate badge styling). Include loading skeletons, error states, and a manual refresh button. Use Card, Badge, Button, and Table components from shadcn/ui. Match the terminal-dark theme used in other panels."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Import and add the new TradeHistoryPanel component to the dashboard grid layout. Position it below the existing panels in a new row that spans the full width, maintaining the responsive grid structure. Ensure it integrates seamlessly with the existing sticky header and footer layout."
+        }
+      ]
+    }
+  ]
 }

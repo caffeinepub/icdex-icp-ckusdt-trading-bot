@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { OpenOrder } from '@/backend';
+import type { OpenOrder, OrderEntry } from '@/backend';
 
 const POLL_INTERVAL = 10_000; // 10 seconds
 
@@ -63,6 +63,19 @@ export function useOpenOrders() {
         queryFn: async () => {
             if (!actor) return [];
             return actor.getOpenOrders();
+        },
+        enabled: !!actor && !isFetching,
+        refetchInterval: POLL_INTERVAL,
+    });
+}
+
+export function useTradeHistory() {
+    const { actor, isFetching } = useActor();
+    return useQuery<OrderEntry[]>({
+        queryKey: ['tradeHistory'],
+        queryFn: async () => {
+            if (!actor) return [];
+            return actor.getTradeHistory();
         },
         enabled: !!actor && !isFetching,
         refetchInterval: POLL_INTERVAL,

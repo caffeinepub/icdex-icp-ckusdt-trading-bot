@@ -1,4 +1,44 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-add-a-pre-flight-balance-check-before-placing-orders-query-the-user-s-icp-and-ckusdt-token-balances-on-chain-and-verify-they-are-sufficient-to-cover-the-configured-grid-display-the-available-balances-in-the-dashboard",
+      "featureTitle": "Add a pre-flight balance check: before placing orders, query the user's ICP and ckUSDT token balances on-chain and verify they are sufficient to cover the configured grid. Display the available balances in the dashboard.",
+      "files": [
+        "frontend/src/components/BotControlPanel.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-transaction-order-history-log-persist-a-list-of-all-orders-placed-and-cancelled-by-the-bot-timestamp-side-price-quantity-status-in-stable-storage-and-expose-it-via-a-query-endpoint-display-this-log-in-a-new-trade-history-panel-on-the-frontend",
+      "featureTitle": "Add a transaction/order history log: persist a list of all orders placed and cancelled by the bot (timestamp, side, price, quantity, status) in stable storage and expose it via a query endpoint. Display this log in a new Trade History panel on the frontend.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/TradeHistoryPanel.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

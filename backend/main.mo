@@ -1,16 +1,29 @@
-import Runtime "mo:core/Runtime";
+import Array "mo:core/Array";
+import Map "mo:core/Map";
 import Nat "mo:core/Nat";
+import Runtime "mo:core/Runtime";
+import Iter "mo:core/Iter";
 import Order "mo:core/Order";
 import Timer "mo:core/Timer";
-import Array "mo:core/Array";
-import Float "mo:core/Float";
-import Int "mo:core/Int";
+import Migration "migration";
+import Time "mo:core/Time";
 
+(with migration = Migration.run)
 actor {
   // ICDex Types
   type Side = { #buy; #sell };
   type OrderType = { #limit; #market; #chase; #post_only };
   type OrderId = Nat;
+  type OrderStatus = { #open; #filled; #cancelled };
+  type OrderEntry = {
+    orderId : OrderId;
+    side : Side;
+    price : Nat;
+    quantity : Nat;
+    status : OrderStatus;
+    timestamp : Time.Time;
+  };
+
   type OrderArgs = {
     price : Nat;
     quantity : Nat;
@@ -39,6 +52,9 @@ actor {
   var lastMidPrice : Nat = 0;
   var lastGridData : [(Side, Nat)] = [];
   var timerId : ?Timer.TimerId = null;
+  var nextOrderId = 0;
+
+  let orderHistoryMap = Map.empty<Nat, OrderEntry>();
 
   module GridEntry {
     public func compare(a : (Side, Nat), b : (Side, Nat)) : Order.Order {
@@ -91,7 +107,9 @@ actor {
   };
 
   public shared ({ caller }) func setConfig(newInterval : Nat, newSpread : Nat, newOrders : Nat) : async () {
-    if (newInterval < 10 or newInterval > 3600 or newSpread < 10 or newSpread > 2000 or newOrders < 4 or newOrders > 50) {
+    if (
+      newInterval < 10 or newInterval > 3600 or newSpread < 10 or newSpread > 2000 or newOrders < 4 or newOrders > 50
+    ) {
       Runtime.trap("Invalid configuration parameters");
     };
     intervalSeconds := newInterval;
@@ -105,6 +123,16 @@ actor {
 
   public query ({ caller }) func getLastGrid() : async [(Text, Nat)] {
     lastGridData.map(func((side, price)) { (sideToText(side), price) });
+  };
+
+  public query ({ caller }) func getTradeHistory() : async [OrderEntry] {
+    orderHistoryMap.values().toArray();
+  };
+
+  func createOrderId() : Nat {
+    let id = nextOrderId;
+    nextOrderId += 1;
+    id;
   };
 
   func sideToText(side : Side) : Text {
@@ -147,9 +175,9 @@ actor {
 
   // Trading Loop with Full Order Cancellation
   func tradingLoop() : async () {
-    // Fetch open orders and cancel all before grid calculation
     await cancelAllOpenOrders();
-    let level10 = await icDex.getLevel10();
+    let icDexWithOpenOrders = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDexWithOpenOrders;
+    let level10 = await icDexWithOpenOrders.getLevel10();
     let bestBid = level10.bids[0].price;
     let bestAsk = level10.asks[0].price;
     let midPrice = (bestBid + bestAsk) / 2 : Nat;
@@ -182,12 +210,16 @@ actor {
     await placeOrders(buyArray.concat(sellArray), midPrice);
   };
 
-  // Place Orders with Dynamic Quantity Calculation
+  // Place Orders with Dynamic Quantity Calculation and Trade History Logging
   func placeOrders(grid : [(Side, Nat)], price : Nat) : async () {
     let quantity = calculateOrderQuantity(price);
+
     if (quantity == 0) {
       Runtime.trap("Order quantity too small at current price");
     };
+
+    let currentTimestamp = Time.now();
+
     for ((side, price) in grid.values()) {
       let orderArgs : OrderArgs = {
         price;
@@ -195,7 +227,20 @@ actor {
         side;
         orderType = #limit;
       };
+
       ignore await icDex.placeOrder(orderArgs);
+
+      let orderId = createOrderId();
+      let entry = {
+        orderId;
+        side;
+        price;
+        quantity;
+        status = #open;
+        timestamp = currentTimestamp;
+      };
+
+      orderHistoryMap.add(orderId, entry);
     };
   };
 
@@ -211,12 +256,23 @@ actor {
     await icDexWithOpenOrders.getOpenOrders();
   };
 
-  // Cancel all open orders
+  // Cancel all open orders and update order history
   public shared ({ caller }) func cancelAllOpenOrders() : async () {
     let openOrders = await getOpenOrders();
     let icDexWithOpenOrders = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDexWithOpenOrders;
     for (order in openOrders.values()) {
       await icDexWithOpenOrders.cancelOrder({ orderId = order.orderId });
+      let cancelledTimestamp = Time.now();
+      let cancelledEntry = {
+        orderId = order.orderId;
+        side = order.side;
+        price = order.price;
+        quantity = order.quantity;
+        status = #cancelled;
+        timestamp = cancelledTimestamp;
+      };
+      orderHistoryMap.add(order.orderId, cancelledEntry);
     };
   };
 };
+

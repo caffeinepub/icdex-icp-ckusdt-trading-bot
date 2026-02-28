@@ -15,6 +15,21 @@ export const OpenOrder = IDL.Record({
   'quantity' : IDL.Nat,
   'price' : IDL.Nat,
 });
+export const OrderStatus = IDL.Variant({
+  'cancelled' : IDL.Null,
+  'open' : IDL.Null,
+  'filled' : IDL.Null,
+});
+export const OrderId = IDL.Nat;
+export const Time = IDL.Int;
+export const OrderEntry = IDL.Record({
+  'status' : OrderStatus,
+  'side' : Side,
+  'orderId' : OrderId,
+  'timestamp' : Time,
+  'quantity' : IDL.Nat,
+  'price' : IDL.Nat,
+});
 
 export const idlService = IDL.Service({
   'cancelAllOpenOrders' : IDL.Func([], [], []),
@@ -38,6 +53,7 @@ export const idlService = IDL.Service({
     ),
   'getLastMidPrice' : IDL.Func([], [IDL.Nat], ['query']),
   'getOpenOrders' : IDL.Func([], [IDL.Vec(OpenOrder)], []),
+  'getTradeHistory' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
   'setConfig' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat], [], []),
   'startBot' : IDL.Func([], [], []),
   'stopBot' : IDL.Func([], [], []),
@@ -50,6 +66,21 @@ export const idlFactory = ({ IDL }) => {
   const OpenOrder = IDL.Record({
     'side' : Side,
     'orderId' : IDL.Nat,
+    'quantity' : IDL.Nat,
+    'price' : IDL.Nat,
+  });
+  const OrderStatus = IDL.Variant({
+    'cancelled' : IDL.Null,
+    'open' : IDL.Null,
+    'filled' : IDL.Null,
+  });
+  const OrderId = IDL.Nat;
+  const Time = IDL.Int;
+  const OrderEntry = IDL.Record({
+    'status' : OrderStatus,
+    'side' : Side,
+    'orderId' : OrderId,
+    'timestamp' : Time,
     'quantity' : IDL.Nat,
     'price' : IDL.Nat,
   });
@@ -76,6 +107,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getLastMidPrice' : IDL.Func([], [IDL.Nat], ['query']),
     'getOpenOrders' : IDL.Func([], [IDL.Vec(OpenOrder)], []),
+    'getTradeHistory' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
     'setConfig' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat], [], []),
     'startBot' : IDL.Func([], [], []),
     'stopBot' : IDL.Func([], [], []),

@@ -1,13 +1,38 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-27T22:22:03.025Z",
-  "summary": "The diff modifies backend/main.mo to implement cancel-all-open-orders logic before repositioning the grid each cycle, as required by REQ-17. The trading loop structure and the dynamic quantity formula (quantity = 10 / midPrice) are preserved. The truncated portion of the file prevents full verification of the implementation details, but the visible code shows the correct architecture (ICDexWithOpenOrders type with getOpenOrders, cancelOrder, and the cancel-all comment before placing orders). No frontend files were modified. project_state.json is updated to reflect the new version.",
-  "missing_requirements": [],
-  "hallucinated_features": [],
-  "confidence": 0.8,
+  "generatedAt": "2026-02-28T12:54:36.831Z",
+  "summary": "The diff implements most of the requested requirements (REQ-1 through REQ-5). Real order placement (REQ-1), cancellation (REQ-2), live price fetching (REQ-3), trade history (REQ-5), and the TradeHistoryPanel are all present. However, REQ-4's core AC items — a backend query endpoint returning on-chain ICP and ckUSDT balances, and disabling the Start button when balances are insufficient — are not implemented. The BotControlPanel shows estimated grid requirements based on mid-price math, but does not fetch or display actual on-chain token balances, nor does it disable the Start button based on real balance checks.",
+  "missing_requirements": [
+    {
+      "id": "REQ-4",
+      "requirement": "Backend exposes a query endpoint returning current ICP and ckUSDT balances for the bot's principal; frontend displays both balances; Start button is disabled with explanatory message if balances are insufficient.",
+      "reason": "The backend/main.mo diff shows no getBalances or similar endpoint querying on-chain ICP/ckUSDT token ledgers. BotControlPanel.tsx only estimates theoretical grid requirements from config math — it does not call any balance query, display live on-chain balances, or conditionally disable the Start button based on actual balances. useQueries.ts has no balance-fetching hook.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/components/BotControlPanel.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "A migration module (backend/migration.mo) providing an explicit state migration function was added, which was not requested in the build spec.",
+      "reason": "The build request only requires stable storage for order history (REQ-5). A separate migration.mo module with an explicit OldActor-to-NewActor migration function was not mentioned in any requirement.",
+      "evidence": [
+        "backend/migration.mo"
+      ]
+    }
+  ],
+  "confidence": 0.88,
   "changed_files": [
     "backend/main.mo",
+    "backend/migration.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/App.tsx",
+    "frontend/src/components/BotControlPanel.tsx",
+    "frontend/src/components/TradeHistoryPanel.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]
 }

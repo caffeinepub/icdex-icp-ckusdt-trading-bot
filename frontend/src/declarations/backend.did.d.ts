@@ -16,8 +16,21 @@ export interface OpenOrder {
   'quantity' : bigint,
   'price' : bigint,
 }
+export interface OrderEntry {
+  'status' : OrderStatus,
+  'side' : Side,
+  'orderId' : OrderId,
+  'timestamp' : Time,
+  'quantity' : bigint,
+  'price' : bigint,
+}
+export type OrderId = bigint;
+export type OrderStatus = { 'cancelled' : null } |
+  { 'open' : null } |
+  { 'filled' : null };
 export type Side = { 'buy' : null } |
   { 'sell' : null };
+export type Time = bigint;
 export interface _SERVICE {
   'cancelAllOpenOrders' : ActorMethod<[], undefined>,
   'cancelOneOrderTest' : ActorMethod<[], undefined>,
@@ -29,6 +42,7 @@ export interface _SERVICE {
   'getLastGrid' : ActorMethod<[], Array<[string, bigint]>>,
   'getLastMidPrice' : ActorMethod<[], bigint>,
   'getOpenOrders' : ActorMethod<[], Array<OpenOrder>>,
+  'getTradeHistory' : ActorMethod<[], Array<OrderEntry>>,
   'setConfig' : ActorMethod<[bigint, bigint, bigint], undefined>,
   'startBot' : ActorMethod<[], undefined>,
   'stopBot' : ActorMethod<[], undefined>,

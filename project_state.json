@@ -1,57 +1,28 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 17,
-  "summary": "Trading bot for ICP/ckUSDT pair on ICDex, written in Motoko. Version 7 in production with open orders panel in dashboard. Next step: implement cancel-all-then-reposition approach in tradingLoop() — cancel all open orders before placing new grid orders each cycle (AR-4/AR-9, simplified approach).",
+  "projectStateVersion": 3,
+  "summary": "Building a trading bot for the decentralized exchange icDex, trading the ICP/ckUSDT pair. Currently at Version 14 in production. Working on activating final functions to enable the first live test with real assets.",
   "architectural_notes": [
-    "Bot is a Motoko actor canister targeting ICDex pair canister jgxow-pqaaa-aaaar-qahaq-cai (ICP/ckUSDT)",
-    "Grid strategy: 20 orders (10 buy + 10 sell), spread of 45 bps (0.45%), mid-price derived from best bid/ask",
-    "Trading loop runs every 60 seconds using Timer.recurringTimer",
-    "Tokens are deposited directly into the bot canister (no external wallet allowance needed)",
-    "Order quantity is dynamic: 10 / midPrice (representing $10 per order in ICP terms), not fixed at 2 ICP",
-    "Grid repositioning strategy: cancel ALL open orders before placing new grid (not selective) — simpler, avoids budget_exceeded issues with order comparison logic"
+    "Target exchange: icDex (decentralized exchange)",
+    "Trading pair: ICP/ckUSDT",
+    "Platform: Internet Computer Protocol (ICP) ecosystem"
   ],
-  "known_issues": [
-    "Smart grid repositioning (AR-4/AR-9) builds repeatedly fail with budget_exceeded; attempting bottom-up incremental implementation"
-  ],
+  "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-build-a-dashboard-frontend-that-connects-to-the-backend-actor-and-displays-1-a-bot-control-panel-with-start-bot-and-stop-bot-buttons-that-call-startbot-and-stopbot-and-a-live-status-indicator-running-stopped-2-a-configuration-panel-showing-and-allowing-edits-to-intervalseconds-spreadbps-and-numorders-with-a-save-config-button-3-a-market-data-panel-showing-the-last-computed-mid-price-4-a-grid-preview-table-listing-all-computed-orders-with-columns-side-buy-sell-price-and-index-all-data-should-be-polled-via-react-query-every-10-seconds",
-      "title": "Build a dashboard frontend that connects to the backend actor and displays: (1) a Bot Control panel with Start Bot and Stop Bot buttons that call startBot() and stopBot(), and a live status indicator (Running / Stopped); (2) a Configuration panel showing and allowing edits to intervalSeconds, spreadBps, and numOrders with a Save Config button; (3) a Market Data panel showing the last computed mid-price; (4) a Grid Preview table listing all computed orders with columns Side (BUY/SELL), Price, and Index. All data should be polled via React Query every 10 seconds.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-apply-a-dark-terminal-inspired-visual-theme-across-the-entire-frontend-dark-charcoal-near-black-backgrounds-monospace-or-semi-monospace-typography-neon-green-accents-for-buy-active-states-red-accents-for-sell-stopped-states-and-amber-gold-for-neutral-data-use-a-clean-grid-based-layout-with-card-panels-subtle-borders-and-minimal-chrome-the-aesthetic-should-feel-like-a-professional-trading-terminal",
-      "title": "Apply a dark, terminal-inspired visual theme across the entire frontend: dark charcoal/near-black backgrounds, monospace or semi-monospace typography, neon green accents for buy/active states, red accents for sell/stopped states, and amber/gold for neutral data. Use a clean grid-based layout with card panels, subtle borders, and minimal chrome. The aesthetic should feel like a professional trading terminal.",
+      "id": "feature-add-a-pre-flight-balance-check-before-placing-orders-query-the-user-s-icp-and-ckusdt-token-balances-on-chain-and-verify-they-are-sufficient-to-cover-the-configured-grid-display-the-available-balances-in-the-dashboard",
+      "title": "Add a pre-flight balance check: before placing orders, query the user's ICP and ckUSDT token balances on-chain and verify they are sufficient to cover the configured grid. Display the available balances in the dashboard.",
       "reqIds": [
         "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-a-canister-balances-panel-to-the-dashboard-frontend-that-displays-the-current-icp-and-ckusdt-balances-held-by-the-bot-canister-poll-balances-every-10-seconds-using-react-query-hooks-consistent-with-the-existing-usequeries-ts-pattern-format-balances-with-appropriate-decimal-places-8-decimals-for-icp-6-for-ckusdt-display-a-deposit-instruction-note-reminding-the-user-to-send-tokens-directly-to-the-canister-principal",
-      "title": "Add a Canister Balances panel to the dashboard frontend that displays the current ICP and ckUSDT balances held by the bot canister. Poll balances every 10 seconds using React Query hooks consistent with the existing useQueries.ts pattern. Format balances with appropriate decimal places (8 decimals for ICP, 6 for ckUSDT). Display a deposit instruction note reminding the user to send tokens directly to the canister principal.",
+      "id": "feature-add-a-transaction-order-history-log-persist-a-list-of-all-orders-placed-and-cancelled-by-the-bot-timestamp-side-price-quantity-status-in-stable-storage-and-expose-it-via-a-query-endpoint-display-this-log-in-a-new-trade-history-panel-on-the-frontend",
+      "title": "Add a transaction/order history log: persist a list of all orders placed and cancelled by the bot (timestamp, side, price, quantity, status) in stable storage and expose it via a query endpoint. Display this log in a new Trade History panel on the frontend.",
       "reqIds": [
-        "REQ-9"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-react-query-hook-useopenorders-to-frontend-src-hooks-usequeries-ts-that-calls-the-backend-getopenorders-function-and-polls-every-10-seconds-following-the-same-pattern-as-existing-hooks-in-that-file",
-      "title": "Add a React Query hook `useOpenOrders()` to `frontend/src/hooks/useQueries.ts` that calls the backend `getOpenOrders()` function and polls every 10 seconds, following the same pattern as existing hooks in that file.",
-      "reqIds": [
-        "REQ-15"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-a-new-openorderspanel-react-component-in-frontend-src-components-openorderspanel-tsx-that-displays-the-open-orders-fetched-from-icdex-in-a-table-with-columns-order-id-side-buy-sell-with-neon-green-red-accent-badges-consistent-with-the-terminal-theme-price-and-quantity-show-a-loading-skeleton-while-fetching-an-error-message-on-failure-and-an-empty-state-message-when-there-are-no-open-orders-add-this-panel-to-the-dashboard-grid-in-frontend-src-app-tsx",
-      "title": "Create a new `OpenOrdersPanel` React component in `frontend/src/components/OpenOrdersPanel.tsx` that displays the open orders fetched from ICDex in a table with columns: Order ID, Side (BUY/SELL with neon green / red accent badges consistent with the terminal theme), Price, and Quantity. Show a loading skeleton while fetching, an error message on failure, and an empty state message when there are no open orders. Add this panel to the dashboard grid in `frontend/src/App.tsx`.",
-      "reqIds": [
-        "REQ-16"
+        "REQ-5"
       ],
       "version": 1
     }
@@ -59,139 +30,37 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Activate real order placement via placeOrder()",
+      "summary": "Activate final trading bot functions for first live test with real assets on icDex ICP/ckUSDT pair",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Activate real order cancellation via cancelOrder()",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Calculate order quantity based on $10 per order",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Automatic grid repositioning on each trading loop cycle",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Implement the backend Motoko actor for the ICDex grid trading bot. The actor must: (1) define the ICDex types (Side, OrderType, OrderId, OrderArgs, Level, Level10, Ticker); (2) reference the ICDex ICP/ckUSDT pair canister at principal 'jgxow-pqaaa-aaaar-qahaq-cai' with methods placeOrder, cancelOrder, getLevel10, and ticker; (3) expose stable configuration variables: intervalSeconds (default 60), spreadBps (default 45), numOrders (default 20); (4) expose public functions startBot() and stopBot() that start and cancel a recurring timer; (5) implement a private tradingLoop() that reads the Level10 order book, calculates mid-price as (bestBid + bestAsk) / 2, builds a symmetric grid of numOrders orders using the spreadBps offset, and logs each computed order price and side via Debug.print; (6) do NOT call placeOrder() or cancelOrder() in this phase — only log the computed orders.",
+      "summary": "Implement real order placement on icDex: wire the backend grid trading logic to actually submit buy and sell limit orders to the icDex DEX canister for the ICP/ckUSDT pair, replacing any stub or simulated order logic.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-6",
-      "summary": "Expose backend query/update endpoints that the frontend can call: getBotStatus() returning whether the bot is running (bool), getConfig() returning {intervalSeconds, spreadBps, numOrders}, and setConfig(intervalSeconds, spreadBps, numOrders) to update configuration. Also expose getLastMidPrice() returning the most recently computed mid-price (Nat), and getLastGrid() returning the last computed grid as an array of {side: Text, price: Nat} records so the frontend can display them without relying solely on Debug.print logs.",
+      "id": "AR-3",
+      "summary": "Implement real order cancellation on icDex: before placing a new grid of orders on each interval tick, cancel all previously placed open orders via the icDex canister so stale orders do not accumulate.",
       "reqIds": [
         "REQ-2"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-7",
-      "summary": "Implement token balance management in the backend actor: the bot must operate exclusively using ICP and ckUSDT tokens deposited directly into the canister's own account. Add query functions `getIcpBalance()` and `getCkUsdtBalance()` that return the canister's current token balances by calling the respective ICRC-1/ICP ledger canisters.",
+      "id": "AR-4",
+      "summary": "Fetch the live mid price from the icDex ICP/ckUSDT order book canister instead of using a placeholder or hardcoded value, so grid prices are anchored to the real market.",
       "reqIds": [
-        "REQ-5"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-8",
-      "summary": "Activate real order placement in the trading loop: replace all Debug.print stubs with actual `placeOrder()` calls to the ICDex canister at `jgxow-pqaaa-aaaar-qahaq-cai`. Each order quantity must be calculated dynamically as 10 / midPrice (representing $10 per order in ckUSDT terms), using the current mid-price. Place all orders in the newly computed grid that do not already exist as open orders.",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-9",
-      "summary": "Implement smart grid repositioning: on each trading loop cycle, fetch the canister's currently open orders from ICDex, compare them against the newly calculated grid, and cancel only the orders whose price levels fall outside the new grid range. Orders whose prices still match a valid grid level must be left open to avoid unnecessary cancellation fees.",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-10",
-      "summary": "Expose backend query endpoints for canister token balances so the frontend can display deposited ICP and ckUSDT balances. Add `getIcpBalance()` and `getCkUsdtBalance()` as public query or update functions returning Nat values.",
-      "reqIds": [
-        "REQ-8"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-11",
-      "summary": "In the backend trading loop (tradingLoop()), replace all Debug.print stubs for order placement with actual placeOrder() calls to the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai'. Each order (both BUY and SELL) must use a fixed quantity of 2 ICP (represented as 200_000_000 e8s). Place all orders in the newly computed grid. Do not implement cancelOrder or grid repositioning in this step.",
-      "reqIds": [
-        "REQ-10"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-12",
-      "summary": "In the backend trading loop (tradingLoop()), before placing new grid orders each cycle, fetch all currently open orders from the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' and call cancelOrder() on each of them. This ensures no stale orders accumulate across cycles. Do not implement smart grid repositioning or order comparison logic in this step — cancel all open orders unconditionally before placing the new grid.",
-      "reqIds": [
-        "REQ-11"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-13",
-      "summary": "Revert order quantity from fixed 2 ICP (200_000_000 e8s) back to dynamic $10 per order (10 / midPrice in ICP terms) as the default quantity calculation in the trading loop.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-14",
-      "summary": "In the backend trading loop (tradingLoop()), revert the order quantity calculation from the fixed 2 ICP (200_000_000 e8s) back to the original dynamic $10 per order formula: quantity = 10 / midPrice (in ICP terms, using the current mid-price). This dynamic calculation must be used as the default for all grid orders (both BUY and SELL sides) going forward.",
-      "reqIds": [
-        "REQ-12"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-15",
-      "summary": "In the backend Motoko actor (backend/main.mo), add a new public update function `cancelOneOrderTest()` that calls `cancelOrder()` on the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' with a single hardcoded order ID (e.g., orderId = 0). This function must be completely self-contained and must not modify any existing functions including tradingLoop(). It serves only as a proof of concept that the cancelOrder() call compiles and executes without budget_exceeded errors.",
-      "reqIds": [
-        "REQ-13"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-16",
-      "summary": "Fetch open orders from ICDex canister and display them in the dashboard frontend as a simple panel showing order ID, side, price, and quantity. Poll every 10 seconds via React Query. No cancellation or repositioning logic.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-17",
-      "summary": "Add a public query function `getOpenOrders()` to the backend Motoko actor that calls the ICDex canister at 'jgxow-pqaaa-aaaar-qahaq-cai' to fetch the canister's currently open orders and returns them as an array of records containing orderId (Nat), side (Text), price (Nat), and quantity (Nat). This function must be self-contained and must not modify any existing functions.",
-      "reqIds": [
-        "REQ-14"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-18",
-      "summary": "In the backend trading loop (tradingLoop() in backend/main.mo), before placing new grid orders each cycle, unconditionally cancel ALL currently open orders by calling the ICDex canister's cancelOrder() for each open order fetched via getOpenOrders(). Only after all cancellations are complete should the new grid orders be placed. No comparison logic, no selective cancellation — cancel every open order on every cycle before repositioning.",
-      "reqIds": [
-        "REQ-17"
+        "REQ-3"
       ],
       "status": "pending"
     }
   ],
   "gameProjectType": "none",
-  "projectName": "ICDex ICP/ckUSDT Trading Bot",
+  "projectName": "icDex Trading Bot",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }
