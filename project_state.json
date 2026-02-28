@@ -1,28 +1,30 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Building a trading bot for the decentralized exchange icDex, trading the ICP/ckUSDT pair. Currently at Version 14 in production. Working on activating final functions to enable the first live test with real assets.",
+  "summary": "Trading bot project on Internet Computer (ICP) using icDex exchange. Bot canister ID: jgxow-pqaaa-aaaar-qahaq-cai. Configured to trade ckUSDT pair. Cycles and ckUSDT have been added to the canister. Bot is deployed (Version 16) and running, but UI shows no trade activity yet. Waiting 24h to observe activity.",
   "architectural_notes": [
-    "Target exchange: icDex (decentralized exchange)",
-    "Trading pair: ICP/ckUSDT",
-    "Platform: Internet Computer Protocol (ICP) ecosystem"
+    "Bot canister ID: jgxow-pqaaa-aaaar-qahaq-cai deployed on Internet Computer",
+    "Bot configured to trade ckUSDT pair on icDex exchange",
+    "Real order sending, cancellation, and live price fetching from icDex still need integration"
   ],
-  "known_issues": [],
+  "known_issues": [
+    "UI shows blank/black screen with no trade activity or status information displayed"
+  ],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-add-a-pre-flight-balance-check-before-placing-orders-query-the-user-s-icp-and-ckusdt-token-balances-on-chain-and-verify-they-are-sufficient-to-cover-the-configured-grid-display-the-available-balances-in-the-dashboard",
-      "title": "Add a pre-flight balance check: before placing orders, query the user's ICP and ckUSDT token balances on-chain and verify they are sufficient to cover the configured grid. Display the available balances in the dashboard.",
+      "id": "feature-add-an-activitylogpanel-frontend-component-that-displays-the-bot-activity-log-fetched-from-the-backend-showing-each-entry-with-its-timestamp-relative-time-event-type-badge-color-coded-green-for-trades-yellow-for-orders-red-for-errors-neutral-for-status-changes-and-message-the-panel-should-auto-refresh-every-10-seconds-using-the-existing-react-query-polling-pattern-from-usequeries-ts-and-display-a-no-activity-yet-empty-state-when-the-log-is-empty",
+      "title": "Add an ActivityLogPanel frontend component that displays the bot activity log fetched from the backend, showing each entry with its timestamp (relative time), event type badge (color-coded: green for trades, yellow for orders, red for errors, neutral for status changes), and message. The panel should auto-refresh every 10 seconds using the existing React Query polling pattern from useQueries.ts and display a 'No activity yet' empty state when the log is empty.",
       "reqIds": [
-        "REQ-4"
+        "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-a-transaction-order-history-log-persist-a-list-of-all-orders-placed-and-cancelled-by-the-bot-timestamp-side-price-quantity-status-in-stable-storage-and-expose-it-via-a-query-endpoint-display-this-log-in-a-new-trade-history-panel-on-the-frontend",
-      "title": "Add a transaction/order history log: persist a list of all orders placed and cancelled by the bot (timestamp, side, price, quantity, status) in stable storage and expose it via a query endpoint. Display this log in a new Trade History panel on the frontend.",
+      "id": "feature-integrate-the-activitylogpanel-into-the-main-app-tsx-dashboard-layout-placing-it-below-the-tradehistorypanel-or-in-a-prominent-position-in-the-grid-so-it-is-immediately-visible-without-scrolling-on-desktop-viewports",
+      "title": "Integrate the ActivityLogPanel into the main App.tsx dashboard layout, placing it below the TradeHistoryPanel or in a prominent position in the grid so it is immediately visible without scrolling on desktop viewports.",
       "reqIds": [
-        "REQ-5"
+        "REQ-3"
       ],
       "version": 1
     }
@@ -30,37 +32,21 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Activate final trading bot functions for first live test with real assets on icDex ICP/ckUSDT pair",
+      "summary": "Add activity log panel to the UI to display bot events, trades, and errors in real-time",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Implement real order placement on icDex: wire the backend grid trading logic to actually submit buy and sell limit orders to the icDex DEX canister for the ICP/ckUSDT pair, replacing any stub or simulated order logic.",
+      "summary": "Add a backend query endpoint that returns a chronological activity log of bot events, including trade executions, order placements, order cancellations, errors, and bot start/stop events. Each log entry should include a timestamp, event type (e.g., 'trade', 'order_placed', 'order_cancelled', 'error', 'bot_started', 'bot_stopped'), and a descriptive message. Store the most recent 100 log entries in stable state.",
       "reqIds": [
         "REQ-1"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Implement real order cancellation on icDex: before placing a new grid of orders on each interval tick, cancel all previously placed open orders via the icDex canister so stale orders do not accumulate.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Fetch the live mid price from the icDex ICP/ckUSDT order book canister instead of using a placeholder or hardcoded value, so grid prices are anchored to the real market.",
-      "reqIds": [
-        "REQ-3"
       ],
       "status": "pending"
     }
   ],
   "gameProjectType": "none",
-  "projectName": "icDex Trading Bot",
+  "projectName": "ICP Trading Bot",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

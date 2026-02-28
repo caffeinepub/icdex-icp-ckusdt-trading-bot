@@ -8,6 +8,12 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const Time = IDL.Int;
+export const LogEntry = IDL.Record({
+  'message' : IDL.Text,
+  'timestamp' : Time,
+  'eventType' : IDL.Text,
+});
 export const Side = IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null });
 export const OpenOrder = IDL.Record({
   'side' : Side,
@@ -21,7 +27,6 @@ export const OrderStatus = IDL.Variant({
   'filled' : IDL.Null,
 });
 export const OrderId = IDL.Nat;
-export const Time = IDL.Int;
 export const OrderEntry = IDL.Record({
   'status' : OrderStatus,
   'side' : Side,
@@ -34,6 +39,7 @@ export const OrderEntry = IDL.Record({
 export const idlService = IDL.Service({
   'cancelAllOpenOrders' : IDL.Func([], [], []),
   'cancelOneOrderTest' : IDL.Func([], [], []),
+  'getActivityLog' : IDL.Func([], [IDL.Vec(LogEntry)], ['query']),
   'getBotStatus' : IDL.Func([], [IDL.Bool], ['query']),
   'getConfig' : IDL.Func(
       [],
@@ -62,6 +68,12 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const Time = IDL.Int;
+  const LogEntry = IDL.Record({
+    'message' : IDL.Text,
+    'timestamp' : Time,
+    'eventType' : IDL.Text,
+  });
   const Side = IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null });
   const OpenOrder = IDL.Record({
     'side' : Side,
@@ -75,7 +87,6 @@ export const idlFactory = ({ IDL }) => {
     'filled' : IDL.Null,
   });
   const OrderId = IDL.Nat;
-  const Time = IDL.Int;
   const OrderEntry = IDL.Record({
     'status' : OrderStatus,
     'side' : Side,
@@ -88,6 +99,7 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     'cancelAllOpenOrders' : IDL.Func([], [], []),
     'cancelOneOrderTest' : IDL.Func([], [], []),
+    'getActivityLog' : IDL.Func([], [IDL.Vec(LogEntry)], ['query']),
     'getBotStatus' : IDL.Func([], [IDL.Bool], ['query']),
     'getConfig' : IDL.Func(
         [],

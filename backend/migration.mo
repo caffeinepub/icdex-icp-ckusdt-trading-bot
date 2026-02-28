@@ -1,17 +1,15 @@
 import Map "mo:core/Map";
 import Nat "mo:core/Nat";
+import Queue "mo:core/Queue";
 import Time "mo:core/Time";
 
 module {
-  // ICDex Types
   type Side = { #buy; #sell };
-
-  // Order status
+  type OrderType = { #limit; #market; #chase; #post_only };
+  type OrderId = Nat;
   type OrderStatus = { #open; #filled; #cancelled };
-
-  // Order entry (historical)
   type OrderEntry = {
-    orderId : Nat;
+    orderId : OrderId;
     side : Side;
     price : Nat;
     quantity : Nat;
@@ -19,7 +17,12 @@ module {
     timestamp : Time.Time;
   };
 
-  // Persistent state
+  type LogEntry = {
+    timestamp : Time.Time;
+    eventType : Text;
+    message : Text;
+  };
+
   type OldActor = {
     intervalSeconds : Nat;
     spreadBps : Nat;
@@ -28,9 +31,10 @@ module {
     lastMidPrice : Nat;
     lastGridData : [(Side, Nat)];
     timerId : ?Nat;
+    nextOrderId : Nat;
+    orderHistoryMap : Map.Map<Nat, OrderEntry>;
   };
 
-  // Persistent state with order history
   type NewActor = {
     intervalSeconds : Nat;
     spreadBps : Nat;
@@ -39,15 +43,13 @@ module {
     lastMidPrice : Nat;
     lastGridData : [(Side, Nat)];
     timerId : ?Nat;
-    orderHistoryMap : Map.Map<Nat, OrderEntry>;
     nextOrderId : Nat;
+    orderHistoryMap : Map.Map<Nat, OrderEntry>;
+    activityLog : Queue.Queue<LogEntry>;
   };
 
   public func run(old : OldActor) : NewActor {
-    {
-      old with
-      orderHistoryMap = Map.empty<Nat, OrderEntry>();
-      nextOrderId = 0;
-    };
+    let emptyLog = Queue.empty<LogEntry>();
+    { old with activityLog = emptyLog };
   };
 };

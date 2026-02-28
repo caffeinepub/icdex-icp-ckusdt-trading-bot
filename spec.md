@@ -1,13 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Activate live trading functions for the icDex ICP/ckUSDT grid bot, replacing all stub/simulated logic with real on-chain interactions for order placement, cancellation, price fetching, balance checks, and trade history.
+**Goal:** Add an activity log feature to the ICDex Grid Bot trading UI so users can monitor bot events and debug issues in real time.
 
 **Planned changes:**
-- Wire the backend grid trading logic to submit real buy/sell limit orders to the icDex DEX canister for the ICP/ckUSDT pair, replacing any stub or simulated order logic.
-- Implement real order cancellation on each timer tick via the icDex canister before placing a new grid, so stale orders do not accumulate.
-- Fetch the live mid price (best bid/ask or last trade) from the icDex ICP/ckUSDT canister instead of using any placeholder or hardcoded value; halt order placement and report an error if the price fetch fails.
-- Add a pre-flight balance check that queries on-chain ICP and ckUSDT balances before placing orders; display both balances in the dashboard and disable the Start button with an explanatory message if balances are insufficient.
-- Persist a log of all placed and cancelled orders (timestamp, side, price, quantity, status) in stable storage and expose it via a query endpoint; display this log in a new Trade History panel on the frontend, most recent first.
+- Add a `getActivityLog` backend query that returns the 100 most recent log entries (timestamp, event type, message) stored in stable state
+- Record bot start/stop, order placement, order cancellation, trade execution, and error events into the log
+- Create an `ActivityLogPanel` frontend component displaying entries with relative timestamps, color-coded event type badges (green for trades, yellow for orders, red for errors, neutral for status), and a "No activity yet" empty state
+- Add a React Query hook in `useQueries.ts` that polls the activity log every 10 seconds
+- Show a loading skeleton on first fetch
+- Integrate `ActivityLogPanel` into the `App.tsx` dashboard grid, visible on desktop without scrolling, below the `TradeHistoryPanel`
 
-**User-visible outcome:** The bot can be started against real ICP/ckUSDT assets on icDex: it fetches the live market price, checks available balances, places and cancels real on-chain grid orders each tick, and the dashboard shows live balances, current open orders, and a persistent trade history log.
+**User-visible outcome:** Users can see a live-updating activity log panel on the dashboard showing recent bot events, making it easy to spot errors and track trading activity.

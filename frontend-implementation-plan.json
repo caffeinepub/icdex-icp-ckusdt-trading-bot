@@ -1,50 +1,45 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Activate live trading functions for icDex ICP/ckUSDT bot",
+  "title": "Add Activity Log Panel to Trading Bot UI",
   "requirements": [
     {
-      "id": "REQ-4",
-      "summary": "Display live ICP and ckUSDT balances with pre-flight checks for grid trading",
+      "id": "REQ-2",
+      "summary": "Add ActivityLogPanel frontend component to display bot activity log with auto-refresh polling",
       "acceptanceCriteria": [
-        "The frontend displays both ICP and ckUSDT balances in the BotControlPanel or a dedicated panel",
-        "If balances are insufficient for the configured grid, the Start button is disabled and an explanatory message is shown"
+        "ActivityLogPanel renders a scrollable list of log entries sorted by most recent first.",
+        "Each entry displays a relative timestamp, a color-coded event type badge, and a message.",
+        "Error events are visually distinct (red badge) to aid debugging.",
+        "Panel shows a 'No activity yet' empty state when there are no log entries.",
+        "Panel polls the backend every 10 seconds via React Query.",
+        "Loading skeleton is shown while data is being fetched on first load."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add a new React Query hook useBalances that fetches ICP and ckUSDT balances from the backend getBalances method. Include refetch on actor change and a manual refetch function. Follow the existing query pattern used for other backend data."
+          "description": "Add a new useActivityLog React Query hook following the existing polling pattern (10-second refetch interval, enabled when actor is available). The hook should call backend.getActivityLog() and return the activity log array with isLoading, isError, error, and refetch properties. Follow the same pattern as useTradeHistory and other existing query hooks."
         },
         {
-          "path": "frontend/src/components/BotControlPanel.tsx",
-          "operation": "modify",
-          "description": "Integrate the useBalances hook to fetch and display current ICP and ckUSDT balances. Add balance display UI with formatted token amounts. Implement logic to disable the Start button when balances are insufficient for the configured grid (compare against grid requirements). Show an explanatory warning message when balances are too low. Maintain the existing terminal-dark theme and layout structure."
+          "path": "frontend/src/components/ActivityLogPanel.tsx",
+          "operation": "create",
+          "description": "Create a new dashboard panel component that displays the activity log fetched via useActivityLog hook. Render a Card wrapper with title 'Activity Log' and a refresh button. Map over log entries to display each with a relative timestamp (use the same relative time formatting as TradeHistoryPanel), a color-coded badge for eventType (green for 'trade', yellow for 'order_placed' and 'order_cancelled', red for 'error', neutral for 'bot_started' and 'bot_stopped'), and the message text. Show a loading skeleton while isLoading is true. Display 'No activity yet' empty state when the log array is empty. Make the list scrollable with a max height to fit the dashboard grid layout. Use existing shadcn/ui Card, Badge, and Skeleton components for consistency."
         }
       ]
     },
     {
-      "id": "REQ-5",
-      "summary": "Display complete trade history log of all bot orders",
+      "id": "REQ-3",
+      "summary": "Integrate ActivityLogPanel into the main dashboard layout for immediate visibility",
       "acceptanceCriteria": [
-        "A new Trade History panel on the dashboard renders the order log, most recent first",
-        "Each entry shows timestamp, side (buy/sell), price, quantity, and status (placed/cancelled/failed)"
+        "ActivityLogPanel is rendered in App.tsx as part of the dashboard grid.",
+        "Panel is visible in the main viewport area on desktop without requiring scroll.",
+        "Layout remains responsive on smaller screens."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Add a new React Query hook useTradeHistory that calls the backend getTradeHistory method (already exposed in backend interface). Include refetch on actor change, manual refetch capability, and proper type mapping for OrderEntry array. Follow existing query patterns."
-        },
-        {
-          "path": "frontend/src/components/TradeHistoryPanel.tsx",
-          "operation": "create",
-          "description": "Create a new panel component that fetches trade history via useTradeHistory hook. Render a scrollable table displaying OrderEntry records sorted by timestamp descending (most recent first). Show columns for timestamp (formatted as relative time), side (buy/sell with color-coded badges using terminal-green-500 for buy and terminal-red-500 for sell), price (formatted from e8s), quantity (formatted from e8s), and status (cancelled/open/filled with appropriate badge styling). Include loading skeletons, error states, and a manual refresh button. Use Card, Badge, Button, and Table components from shadcn/ui. Match the terminal-dark theme used in other panels."
-        },
-        {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Import and add the new TradeHistoryPanel component to the dashboard grid layout. Position it below the existing panels in a new row that spans the full width, maintaining the responsive grid structure. Ensure it integrates seamlessly with the existing sticky header and footer layout."
+          "description": "Import ActivityLogPanel and add it to the dashboard grid layout. Place it below TradeHistoryPanel or in a prominent grid position that keeps it visible on desktop viewports without scrolling. Ensure the responsive grid classes maintain usability on smaller screens. Follow the existing grid pattern used for other dashboard panels."
         }
       ]
     }

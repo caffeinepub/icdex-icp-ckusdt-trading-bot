@@ -1,4 +1,4 @@
-import { TrendingUp, RefreshCw, Clock, AlertCircle } from 'lucide-react';
+import { TrendingUp, RefreshCw, Clock, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { useLastMidPrice, useBotStatus } from '@/hooks/useQueries';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState, useEffect } from 'react';
@@ -11,7 +11,6 @@ import { useState, useEffect } from 'react';
 function formatMidPrice(price: bigint): string {
     const num = Number(price);
     if (num === 0) return '—';
-    // Divide by 10^8 to get human-readable price
     const humanPrice = num / 1e8;
     if (humanPrice >= 1000) {
         return humanPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -32,11 +31,66 @@ function formatRelativeTime(timestamp: number): string {
     return new Date(timestamp).toLocaleTimeString('en-US', { hour12: false });
 }
 
+type PriceStatus = 'live' | 'stale' | 'error' | 'idle';
+
+function getPriceStatus(
+    isError: boolean,
+    hasData: boolean,
+    dataUpdatedAt: number | undefined
+): PriceStatus {
+    if (isError) return 'error';
+    if (!hasData || !dataUpdatedAt) return 'idle';
+    const ageMs = Date.now() - dataUpdatedAt;
+    if (ageMs < 15_000) return 'live';
+    if (ageMs < 30_000) return 'stale';
+    return 'stale';
+}
+
+interface StatusBadgeProps {
+    status: PriceStatus;
+}
+
+function StatusBadge({ status }: StatusBadgeProps) {
+    if (status === 'idle') return null;
+
+    const configs = {
+        live: {
+            label: 'LIVE',
+            className: 'bg-terminal-buy/15 text-terminal-buy border border-terminal-buy/40',
+            dot: 'bg-terminal-buy animate-pulse-buy',
+            icon: <Wifi className="w-2.5 h-2.5" />,
+        },
+        stale: {
+            label: 'STALE',
+            className: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30',
+            dot: 'bg-yellow-400',
+            icon: <Wifi className="w-2.5 h-2.5" />,
+        },
+        error: {
+            label: 'ERROR',
+            className: 'bg-terminal-sell/15 text-terminal-sell border border-terminal-sell/40',
+            dot: 'bg-terminal-sell',
+            icon: <WifiOff className="w-2.5 h-2.5" />,
+        },
+    };
+
+    const cfg = configs[status];
+
+    return (
+        <span
+            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold tracking-widest ${cfg.className}`}
+        >
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
+            {cfg.label}
+        </span>
+    );
+}
+
 export function MarketDataPanel() {
     const { data: midPrice, isLoading, isError, dataUpdatedAt, refetch, isFetching } = useLastMidPrice();
     const { data: isRunning } = useBotStatus();
 
-    // Tick every second to keep relative time fresh
+    // Tick every second to keep relative time and status fresh
     const [, setTick] = useState(0);
     useEffect(() => {
         const id = setInterval(() => setTick((t) => t + 1), 1000);
@@ -44,9 +98,8 @@ export function MarketDataPanel() {
     }, []);
 
     const hasData = midPrice !== undefined && midPrice > BigInt(0);
-
-    // Determine staleness: data older than 30s is considered stale
-    const isStale = dataUpdatedAt ? Date.now() - dataUpdatedAt > 30_000 : false;
+    const priceStatus = getPriceStatus(isError, hasData, dataUpdatedAt);
+    const isStale = priceStatus === 'stale';
 
     return (
         <div className="terminal-border rounded-lg bg-card p-5 flex flex-col gap-4 shadow-terminal">
@@ -57,12 +110,7 @@ export function MarketDataPanel() {
                     <span className="text-xs font-mono font-semibold tracking-widest uppercase text-muted-foreground">
                         Market Data
                     </span>
-                    {isError && (
-                        <span className="flex items-center gap-1 text-xs font-mono text-terminal-sell ml-1">
-                            <AlertCircle className="w-3 h-3" />
-                            Error
-                        </span>
-                    )}
+                    <StatusBadge status={priceStatus} />
                 </div>
                 <button
                     onClick={() => refetch()}
@@ -79,6 +127,10 @@ export function MarketDataPanel() {
                 className={`flex flex-col gap-1 py-3 px-4 rounded border transition-colors ${
                     isError
                         ? 'bg-terminal-sell/5 border-terminal-sell/30'
+                        : isStale
+                        ? 'bg-yellow-500/5 border-yellow-500/20'
+                        : hasData
+                        ? 'bg-terminal-buy/5 border-terminal-buy/20'
                         : 'bg-muted/40 border-border'
                 }`}
             >
@@ -101,14 +153,14 @@ export function MarketDataPanel() {
                     <div className="flex items-baseline gap-2">
                         <span
                             className={`text-2xl font-mono font-bold tracking-tight transition-colors ${
-                                isStale ? 'text-muted-foreground' : 'text-terminal-neutral'
+                                isStale ? 'text-yellow-400' : 'text-terminal-neutral'
                             }`}
                         >
                             {formatMidPrice(midPrice!)}
                         </span>
                         <span className="text-xs font-mono text-muted-foreground">ckUSDT</span>
                         {isStale && (
-                            <span className="text-xs font-mono text-terminal-sell/70 ml-1">(stale)</span>
+                            <span className="text-xs font-mono text-yellow-400/70 ml-1">(stale)</span>
                         )}
                     </div>
                 ) : (
@@ -135,9 +187,27 @@ export function MarketDataPanel() {
 
             {/* Last Updated */}
             <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground pt-1 border-t border-border">
-                <Clock className={`w-3 h-3 ${isStale ? 'text-terminal-sell/60' : ''}`} />
+                <Clock
+                    className={`w-3 h-3 ${
+                        priceStatus === 'error'
+                            ? 'text-terminal-sell/60'
+                            : priceStatus === 'stale'
+                            ? 'text-yellow-400/60'
+                            : priceStatus === 'live'
+                            ? 'text-terminal-buy/60'
+                            : ''
+                    }`}
+                />
                 {dataUpdatedAt ? (
-                    <span className={isStale ? 'text-terminal-sell/70' : ''}>
+                    <span
+                        className={
+                            priceStatus === 'error'
+                                ? 'text-terminal-sell/70'
+                                : priceStatus === 'stale'
+                                ? 'text-yellow-400/70'
+                                : ''
+                        }
+                    >
                         Updated {formatRelativeTime(dataUpdatedAt)}
                     </span>
                 ) : (

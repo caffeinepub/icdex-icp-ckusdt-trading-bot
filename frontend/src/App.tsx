@@ -5,6 +5,7 @@ import { MarketDataPanel } from './components/MarketDataPanel';
 import { GridPreviewTable } from './components/GridPreviewTable';
 import { OpenOrdersPanel } from './components/OpenOrdersPanel';
 import { TradeHistoryPanel } from './components/TradeHistoryPanel';
+import { ActivityLogPanel } from './components/ActivityLogPanel';
 
 function Header() {
     return (
@@ -120,9 +121,10 @@ export default function App() {
                     <OpenOrdersPanel />
                 </div>
 
-                {/* Bottom row: Trade History (full width) */}
-                <div className="grid grid-cols-1 gap-4">
+                {/* Bottom row: Trade History + Activity Log */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                     <TradeHistoryPanel />
+                    <ActivityLogPanel />
                 </div>
             </main>
 

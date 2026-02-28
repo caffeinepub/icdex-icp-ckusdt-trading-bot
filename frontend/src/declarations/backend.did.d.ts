@@ -10,6 +10,11 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface LogEntry {
+  'message' : string,
+  'timestamp' : Time,
+  'eventType' : string,
+}
 export interface OpenOrder {
   'side' : Side,
   'orderId' : bigint,
@@ -34,6 +39,7 @@ export type Time = bigint;
 export interface _SERVICE {
   'cancelAllOpenOrders' : ActorMethod<[], undefined>,
   'cancelOneOrderTest' : ActorMethod<[], undefined>,
+  'getActivityLog' : ActorMethod<[], Array<LogEntry>>,
   'getBotStatus' : ActorMethod<[], boolean>,
   'getConfig' : ActorMethod<
     [],

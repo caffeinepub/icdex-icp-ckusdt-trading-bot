@@ -89,6 +89,12 @@ export class ExternalBlob {
         return this;
     }
 }
+export type Time = bigint;
+export interface LogEntry {
+    message: string;
+    timestamp: Time;
+    eventType: string;
+}
 export interface OrderEntry {
     status: OrderStatus;
     side: Side;
@@ -97,7 +103,6 @@ export interface OrderEntry {
     quantity: bigint;
     price: bigint;
 }
-export type Time = bigint;
 export type OrderId = bigint;
 export interface OpenOrder {
     side: Side;
@@ -117,6 +122,7 @@ export enum Side {
 export interface backendInterface {
     cancelAllOpenOrders(): Promise<void>;
     cancelOneOrderTest(): Promise<void>;
+    getActivityLog(): Promise<Array<LogEntry>>;
     getBotStatus(): Promise<boolean>;
     getConfig(): Promise<{
         intervalSeconds: bigint;
@@ -159,6 +165,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.cancelOneOrderTest();
+            return result;
+        }
+    }
+    async getActivityLog(): Promise<Array<LogEntry>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getActivityLog();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getActivityLog();
             return result;
         }
     }

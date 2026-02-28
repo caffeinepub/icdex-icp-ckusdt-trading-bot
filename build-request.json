@@ -1,110 +1,77 @@
 {
   "kind": "build_request",
-  "title": "Activate live trading functions for icDex ICP/ckUSDT bot",
-  "projectName": "icDex Grid Bot",
-  "priority": "high",
+  "title": "Add Activity Log Panel to Trading Bot UI",
+  "projectName": "ICDex Grid Bot",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Implement real order placement on icDex: wire the backend grid trading logic to actually submit buy and sell limit orders to the icDex DEX canister for the ICP/ckUSDT pair, replacing any stub or simulated order logic.",
+      "text": "Add a backend query endpoint that returns a chronological activity log of bot events, including trade executions, order placements, order cancellations, errors, and bot start/stop events. Each log entry should include a timestamp, event type (e.g., 'trade', 'order_placed', 'order_cancelled', 'error', 'bot_started', 'bot_stopped'), and a descriptive message. Store the most recent 100 log entries in stable state.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-8"
+          "msg-recent-1"
         ],
         "quotes": [
-          "Precisamos ativar as funcoes finais.. para fazermos o primeiro teste com ativos reais"
+          "Podemos adicionar um pequeno log. De atividades. Na interface. Que ajude a encontrar erros no processo?"
         ]
       },
       "acceptanceCriteria": [
-        "When the bot is started, it calls the icDex canister's order placement endpoint with computed grid buy/sell prices and quantities.",
-        "Orders appear in the Open Orders panel reflecting actual on-chain orders.",
-        "If an order placement call fails, the error is logged and surfaced without crashing the bot timer."
+        "A query function `getActivityLog` returns an array of log entries with timestamp, event type, and message fields.",
+        "Bot start and stop events are recorded in the log.",
+        "Order placement and cancellation events are recorded with order details.",
+        "Errors encountered during the trading loop are recorded with descriptive messages.",
+        "Log is capped at the 100 most recent entries to prevent unbounded growth.",
+        "Log entries persist across canister upgrades via stable storage."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Implement real order cancellation on icDex: before placing a new grid of orders on each interval tick, cancel all previously placed open orders via the icDex canister so stale orders do not accumulate.",
-      "target": "backend",
+      "text": "Add an ActivityLogPanel frontend component that displays the bot activity log fetched from the backend, showing each entry with its timestamp (relative time), event type badge (color-coded: green for trades, yellow for orders, red for errors, neutral for status changes), and message. The panel should auto-refresh every 10 seconds using the existing React Query polling pattern from useQueries.ts and display a 'No activity yet' empty state when the log is empty.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-8"
+          "msg-recent-1"
         ],
         "quotes": [
-          "Precisamos ativar as funcoes finais.. para fazermos o primeiro teste com ativos reais"
+          "Podemos adicionar um pequeno log. De atividades. Na interface. Que ajude a encontrar erros no processo?"
         ]
       },
       "acceptanceCriteria": [
-        "On each timer tick, existing open orders tracked by the bot are cancelled on icDex before new orders are submitted.",
-        "The Open Orders panel shows only the current grid's orders after each refresh.",
-        "Cancellation errors are handled gracefully and do not prevent the new grid from being placed."
+        "ActivityLogPanel renders a scrollable list of log entries sorted by most recent first.",
+        "Each entry displays a relative timestamp, a color-coded event type badge, and a message.",
+        "Error events are visually distinct (red badge) to aid debugging.",
+        "Panel shows a 'No activity yet' empty state when there are no log entries.",
+        "Panel polls the backend every 10 seconds via React Query.",
+        "Loading skeleton is shown while data is being fetched on first load."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Fetch the live mid price from the icDex ICP/ckUSDT order book canister instead of using a placeholder or hardcoded value, so grid prices are anchored to the real market.",
-      "target": "backend",
+      "text": "Integrate the ActivityLogPanel into the main App.tsx dashboard layout, placing it below the TradeHistoryPanel or in a prominent position in the grid so it is immediately visible without scrolling on desktop viewports.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-8"
-        ],
-        "quotes": [
-          "No par icp/ckusdt"
+          "msg-recent-1"
         ]
       },
       "acceptanceCriteria": [
-        "The backend queries the icDex canister for the current best bid/ask or last trade price for ICP/ckUSDT.",
-        "The MarketDataPanel displays this live price, refreshed on each bot tick and on manual refresh.",
-        "A failure to fetch the price halts order placement for that tick and reports an error."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Add a pre-flight balance check: before placing orders, query the user's ICP and ckUSDT token balances on-chain and verify they are sufficient to cover the configured grid. Display the available balances in the dashboard.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-8"
-        ],
-        "quotes": [
-          "primeiro teste com ativos reais"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The backend exposes a query endpoint returning current ICP and ckUSDT balances for the bot's principal.",
-        "The frontend displays both balances in a dedicated panel or within the BotControlPanel.",
-        "If balances are insufficient for the configured grid, the Start button is disabled and an explanatory message is shown."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Add a transaction/order history log: persist a list of all orders placed and cancelled by the bot (timestamp, side, price, quantity, status) in stable storage and expose it via a query endpoint. Display this log in a new Trade History panel on the frontend.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-8"
-        ],
-        "quotes": [
-          "primeiro teste com ativos reais"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Each placed and cancelled order is appended to a stable array in the backend with at least: timestamp, side (buy/sell), price, quantity, and status (placed/cancelled/failed).",
-        "A new Trade History panel on the dashboard renders this list, most recent first.",
-        "The log survives canister upgrades via stable storage."
+        "ActivityLogPanel is rendered in App.tsx as part of the dashboard grid.",
+        "Panel is visible in the main viewport area on desktop without requiring scroll.",
+        "Layout remains responsive on smaller screens."
       ]
     }
   ],
   "constraints": [
-    "All Motoko logic must remain in the single backend/main.mo actor.",
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
-    "Use the existing terminal-dark visual theme defined in frontend/src/index.css and tailwind.config.js — do not change the design language."
+    "Do not modify files under frontend/src/hooks/useActor.ts, frontend/src/hooks/useInternetIdentity.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
+    "Follow the existing React Query polling pattern in useQueries.ts for the new activity log query hook.",
+    "Activity log storage in the backend must use stable variables to survive canister upgrades."
   ],
   "nonGoals": [
-    "Supporting trading pairs other than ICP/ckUSDT.",
-    "Integrating with any exchange other than icDex.",
-    "Implementing a market-making strategy beyond the existing grid logic.",
-    "Adding user authentication beyond what is already provided by Internet Identity."
+    "Real-time WebSocket or push-based log streaming.",
+    "Log filtering or search functionality.",
+    "Exporting or downloading the activity log.",
+    "Changing the existing trading logic or configuration."
   ],
   "imageRequirements": {
     "required": [],

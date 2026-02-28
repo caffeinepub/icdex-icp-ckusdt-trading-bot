@@ -7,6 +7,12 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export type Time = bigint;
+export interface LogEntry {
+    message: string;
+    timestamp: Time;
+    eventType: string;
+}
 export interface OrderEntry {
     status: OrderStatus;
     side: Side;
@@ -15,7 +21,6 @@ export interface OrderEntry {
     quantity: bigint;
     price: bigint;
 }
-export type Time = bigint;
 export type OrderId = bigint;
 export interface OpenOrder {
     side: Side;
@@ -35,6 +40,7 @@ export enum Side {
 export interface backendInterface {
     cancelAllOpenOrders(): Promise<void>;
     cancelOneOrderTest(): Promise<void>;
+    getActivityLog(): Promise<Array<LogEntry>>;
     getBotStatus(): Promise<boolean>;
     getConfig(): Promise<{
         intervalSeconds: bigint;

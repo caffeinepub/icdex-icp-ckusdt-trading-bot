@@ -1,12 +1,13 @@
 import Array "mo:core/Array";
+import Iter "mo:core/Iter";
 import Map "mo:core/Map";
 import Nat "mo:core/Nat";
 import Runtime "mo:core/Runtime";
-import Iter "mo:core/Iter";
+import Queue "mo:core/Queue";
 import Order "mo:core/Order";
+import Time "mo:core/Time";
 import Timer "mo:core/Timer";
 import Migration "migration";
-import Time "mo:core/Time";
 
 (with migration = Migration.run)
 actor {
@@ -89,6 +90,49 @@ actor {
     quantity : Nat;
   };
 
+  // Activity Log
+  type LogEntry = {
+    timestamp : Time.Time;
+    eventType : Text;
+    message : Text;
+  };
+
+  let activityLog = Queue.empty<LogEntry>();
+
+  public query ({ caller }) func getActivityLog() : async [LogEntry] {
+    activityLog.toArray();
+  };
+
+  func addLogEntry(eventType : Text, message : Text) {
+    let entry = {
+      timestamp = Time.now();
+      eventType;
+      message;
+    };
+
+    // Convert queue to array
+    let logArray = activityLog.toArray();
+
+    // Clear queue
+    activityLog.clear();
+
+    // If logArray is at or exceeds max size, drop oldest entries and add back to queue
+    let maxLogSize = 100;
+    let prunedArray = if (logArray.size() >= maxLogSize) {
+      logArray.sliceToArray(0, logArray.size() - 1);
+    } else {
+      logArray;
+    };
+
+    // Add back pruned entries
+    for (log in prunedArray.values()) {
+      activityLog.pushBack(log);
+    };
+
+    // Add new entry at the end
+    activityLog.pushBack(entry);
+  };
+
   // Public Config and Status Endpoints
   public query ({ caller }) func getBotStatus() : async Bool {
     botRunning;
@@ -151,6 +195,7 @@ actor {
     };
     timerId := ?Timer.recurringTimer<system>(#seconds intervalSeconds, tradingLoop);
     botRunning := true;
+    addLogEntry("bot_started", "Bot started with interval: " # intervalSeconds.toText() # ", spread: " # spreadBps.toText() # ", orders: " # numOrders.toText());
   };
 
   public shared ({ caller }) func stopBot() : async () {
@@ -161,6 +206,7 @@ actor {
     };
     timerId := null;
     botRunning := false;
+    addLogEntry("bot_stopped", "Bot stopped");
   };
 
   // Calculate $10 in e8s at current midPrice
@@ -215,6 +261,7 @@ actor {
     let quantity = calculateOrderQuantity(price);
 
     if (quantity == 0) {
+      addLogEntry("error", "Order quantity too small at current price: " # price.toText());
       Runtime.trap("Order quantity too small at current price");
     };
 
@@ -241,6 +288,7 @@ actor {
       };
 
       orderHistoryMap.add(orderId, entry);
+      addLogEntry("order_placed", "Placed " # sideToText(side) # " order at price: " # price.toText() # " with quantity: " # quantity.toText());
     };
   };
 
@@ -248,6 +296,7 @@ actor {
   public shared ({ caller }) func cancelOneOrderTest() : async () {
     let orderId = 0;
     await icDex.cancelOrder({ orderId });
+    addLogEntry("order_cancelled", "Cancelled order with ID: " # orderId.toText());
   };
 
   // Fetch open orders from ICDex canister
@@ -272,7 +321,7 @@ actor {
         timestamp = cancelledTimestamp;
       };
       orderHistoryMap.add(order.orderId, cancelledEntry);
+      addLogEntry("order_cancelled", "Cancelled order with ID: " # order.orderId.toText());
     };
   };
 };
-

@@ -1,37 +1,51 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T12:54:36.831Z",
-  "summary": "The diff implements most of the requested requirements (REQ-1 through REQ-5). Real order placement (REQ-1), cancellation (REQ-2), live price fetching (REQ-3), trade history (REQ-5), and the TradeHistoryPanel are all present. However, REQ-4's core AC items — a backend query endpoint returning on-chain ICP and ckUSDT balances, and disabling the Start button when balances are insufficient — are not implemented. The BotControlPanel shows estimated grid requirements based on mid-price math, but does not fetch or display actual on-chain token balances, nor does it disable the Start button based on real balance checks.",
+  "generatedAt": "2026-02-28T13:51:17.016Z",
+  "summary": "The diff implements most of the required functionality: a backend getActivityLog query endpoint with stable storage via migration, an ActivityLogPanel frontend component with color-coded badges, relative timestamps, loading skeletons, empty state, and 10s polling via React Query, and integration into App.tsx. However, several specific acceptance criteria for REQ-1 cannot be fully confirmed from the truncated diff — specifically whether bot start/stop, order placement/cancellation, and error events are actually being logged at the call sites within the trading loop logic in main.mo.",
   "missing_requirements": [
     {
-      "id": "REQ-4",
-      "requirement": "Backend exposes a query endpoint returning current ICP and ckUSDT balances for the bot's principal; frontend displays both balances; Start button is disabled with explanatory message if balances are insufficient.",
-      "reason": "The backend/main.mo diff shows no getBalances or similar endpoint querying on-chain ICP/ckUSDT token ledgers. BotControlPanel.tsx only estimates theoretical grid requirements from config math — it does not call any balance query, display live on-chain balances, or conditionally disable the Start button based on actual balances. useQueries.ts has no balance-fetching hook.",
+      "id": "REQ-1",
+      "requirement": "Bot start and stop events are recorded in the log.",
+      "reason": "The addLogEntry helper is defined in main.mo but the truncated diff does not show the startBot/stopBot public functions calling addLogEntry with 'bot_started'/'bot_stopped' event types. Cannot confirm this AC from visible code.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-1",
+      "requirement": "Order placement and cancellation events are recorded with order details.",
+      "reason": "The diff is truncated and does not show the trading loop or order placement/cancellation logic calling addLogEntry. Cannot confirm order events are instrumented.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-1",
+      "requirement": "Errors encountered during the trading loop are recorded with descriptive messages.",
+      "reason": "The trading loop internals are not visible in the truncated diff. Cannot confirm error handling calls addLogEntry with 'error' event type.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-1",
+      "requirement": "Log entries persist across canister upgrades via stable storage.",
+      "reason": "The activityLog is declared as a regular let binding (Queue.empty), not a stable var. The migration module adds activityLog to the new state shape, but without seeing full stable variable declarations in main.mo it is ambiguous whether the queue actually survives upgrades.",
       "evidence": [
         "backend/main.mo",
-        "frontend/src/components/BotControlPanel.tsx",
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    }
-  ],
-  "hallucinated_features": [
-    {
-      "description": "A migration module (backend/migration.mo) providing an explicit state migration function was added, which was not requested in the build spec.",
-      "reason": "The build request only requires stable storage for order history (REQ-5). A separate migration.mo module with an explicit OldActor-to-NewActor migration function was not mentioned in any requirement.",
-      "evidence": [
         "backend/migration.mo"
       ]
     }
   ],
-  "confidence": 0.88,
+  "hallucinated_features": [],
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
     "frontend/src/App.tsx",
-    "frontend/src/components/BotControlPanel.tsx",
-    "frontend/src/components/TradeHistoryPanel.tsx",
+    "frontend/src/components/ActivityLogPanel.tsx",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]
