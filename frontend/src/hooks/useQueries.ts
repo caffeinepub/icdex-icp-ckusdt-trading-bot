@@ -29,6 +29,7 @@ interface TradingBotActor {
     getTradeHistory(): Promise<Array<OrderEntry>>;
     getActivityLog(count: bigint, page: bigint): Promise<Array<LogEntry>>;
     pending(): Promise<Array<OrderEntry>>;
+    getOpenOrders(): Promise<Array<OrderEntry>>;
     startBot(): Promise<void>;
     stopBot(): Promise<void>;
     cancelAllOpenOrders(): Promise<void>;
@@ -78,11 +79,12 @@ export function useBotStatus() {
     return useQuery<boolean>({
         queryKey: ['botStatus'],
         queryFn: async () => {
-            if (!tradingActor) return false;
+            if (!tradingActor) throw new Error('Actor not ready');
             return tradingActor.getBotStatus();
         },
         enabled: !!actor && !isFetching,
         refetchInterval: POLL_FAST,
+        retry: 2,
     });
 }
 
@@ -94,11 +96,12 @@ export function useBotConfig() {
     return useQuery<BotConfig>({
         queryKey: ['botConfig'],
         queryFn: async () => {
-            if (!tradingActor) return { intervalSeconds: BigInt(60), spreadBps: BigInt(45), numOrders: BigInt(20) };
+            if (!tradingActor) throw new Error('Actor not ready');
             return tradingActor.getConfig();
         },
         enabled: !!actor && !isFetching,
         refetchInterval: POLL_SLOW,
+        retry: 2,
     });
 }
 
@@ -198,11 +201,16 @@ export function useLastGrid() {
     return useQuery<Array<[string, bigint]>>({
         queryKey: ['lastGrid'],
         queryFn: async () => {
-            if (!tradingActor) return [];
-            return tradingActor.getLastGrid();
+            if (!tradingActor) throw new Error('Actor not ready');
+            const result = await tradingActor.getLastGrid();
+            // Always return the array (may be empty if no grid has been generated yet)
+            return result ?? [];
         },
         enabled: !!actor && !isFetching,
         refetchInterval: isRunning ? POLL_FAST : POLL_SLOW,
+        retry: 3,
+        retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
+        staleTime: 3_000,
     });
 }
 
@@ -216,9 +224,7 @@ export function useMarketData() {
     return useQuery<MarketData>({
         queryKey: ['marketData'],
         queryFn: async (): Promise<MarketData> => {
-            if (!tradingActor) {
-                return { midPrice: null, bestBid: null, bestAsk: null, buyLevels: 0, sellLevels: 0, hasData: false, source: 'empty' };
-            }
+            if (!tradingActor) throw new Error('Actor not ready');
 
             // Fetch the last grid from the backend
             const grid = await tradingActor.getLastGrid();
@@ -264,7 +270,7 @@ export function useMarketData() {
     });
 }
 
-// ─── Open Orders (pending) ────────────────────────────────────────────────────
+// ─── Open Orders ─────────────────────────────────────────────────────────────
 
 export function useOpenOrders() {
     const { actor, isFetching } = useActor();
@@ -273,12 +279,16 @@ export function useOpenOrders() {
     return useQuery<OrderEntry[]>({
         queryKey: ['openOrders'],
         queryFn: async () => {
-            if (!tradingActor) return [];
-            return tradingActor.pending();
+            if (!tradingActor) throw new Error('Actor not ready');
+            const result = await tradingActor.getOpenOrders();
+            return result ?? [];
         },
         enabled: !!actor && !isFetching,
         refetchInterval: isRunning ? POLL_FAST : POLL_SLOW,
         refetchOnWindowFocus: true,
+        retry: 3,
+        retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
+        staleTime: 2_000,
     });
 }
 
@@ -290,11 +300,15 @@ export function useTradeHistory() {
     return useQuery<OrderEntry[]>({
         queryKey: ['tradeHistory'],
         queryFn: async () => {
-            if (!tradingActor) return [];
-            return tradingActor.getTradeHistory();
+            if (!tradingActor) throw new Error('Actor not ready');
+            const result = await tradingActor.getTradeHistory();
+            return result ?? [];
         },
         enabled: !!actor && !isFetching,
         refetchInterval: POLL_FAST,
+        retry: 3,
+        retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8_000),
+        staleTime: 2_000,
     });
 }
 
@@ -306,10 +320,12 @@ export function useActivityLog(count = 50, page = 0) {
     return useQuery<LogEntry[]>({
         queryKey: ['activityLog', count, page],
         queryFn: async () => {
-            if (!tradingActor) return [];
-            return tradingActor.getActivityLog(BigInt(count), BigInt(page));
+            if (!tradingActor) throw new Error('Actor not ready');
+            const result = await tradingActor.getActivityLog(BigInt(count), BigInt(page));
+            return result ?? [];
         },
         enabled: !!actor && !isFetching,
         refetchInterval: POLL_FAST,
+        retry: 2,
     });
 }

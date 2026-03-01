@@ -1,44 +1,81 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T00:52:01.594Z",
+  "generatedAt": "2026-03-01T01:14:56.135Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 1,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix the Market Data LIVE section so that Mid Price, Best Bid, Best Ask, Buy Levels, and Sell Levels display real values instead of dashes or zeros. The issue is that the ICDex quote/order-book fetch is failing silently; add proper error surfacing and a retry/fallback so the UI shows either a live value or a clear error message rather than blank dashes.",
+        "summary": "Investigate and fix the Grid Preview Table (grid levels) panel so that it correctly fetches and displays current grid price levels from the backend canister. Ensure loading, error, and empty states are handled distinctly — empty state should only appear if the backend genuinely returns zero grid levels, not due to a fetch failure or uninitialized actor.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/MarketDataPanel.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/GridPreviewTable.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/MarketDataPanel.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/GridPreviewTable.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "In the backend, ensure the query function that retrieves market data (mid price, best bid/ask, order book levels) from the ICDex canister returns a structured error variant when the external call fails rather than returning zero/null silently. Log the failure to the activity log so the operator can diagnose the root cause.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Investigate and fix the Open Orders panel so that it correctly fetches and displays open orders from the backend canister. Ensure the panel distinguishes between a genuine empty order book and a failed/unresolved query — errors must surface visibly rather than silently rendering an empty list.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/OpenOrdersPanel.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/OpenOrdersPanel.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Investigate and fix the Trade History panel so that it correctly fetches and displays past trades from the backend canister. Ensure the panel distinguishes between a genuine empty history and a failed/unresolved query — errors must surface visibly rather than silently rendering an empty list.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/TradeHistoryPanel.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/TradeHistoryPanel.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Audit the useQueries.ts hooks for grid levels, open orders, and trade history to ensure: (1) the actor is fully initialized before queries fire, (2) canister health-check guards are not incorrectly blocking these queries, (3) polling intervals are active, and (4) fetch errors are propagated to the UI rather than swallowed.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts"
+        ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/MarketDataPanel.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/GridPreviewTable.tsx",
+    "frontend/src/components/OpenOrdersPanel.tsx",
+    "frontend/src/components/TradeHistoryPanel.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",

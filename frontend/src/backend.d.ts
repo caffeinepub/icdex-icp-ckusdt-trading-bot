@@ -42,6 +42,7 @@ export interface backendInterface {
         numOrders: bigint;
     }>;
     getLastGrid(): Promise<Array<[string, bigint]>>;
+    getOpenOrders(): Promise<Array<OrderEntry>>;
     getTradeHistory(): Promise<Array<OrderEntry>>;
     healthCheck(): Promise<boolean>;
     pending(): Promise<Array<OrderEntry>>;

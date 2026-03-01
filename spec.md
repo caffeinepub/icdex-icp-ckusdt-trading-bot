@@ -1,11 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the Market Data LIVE section so it displays real values (Mid Price, Best Bid, Best Ask, Buy Levels, Sell Levels) instead of dashes or zeros, and surface errors clearly when the ICDex data fetch fails.
+**Goal:** Fix the Grid Levels, Open Orders, and Trade History panels in the ICDex Trading Bot dashboard so they correctly fetch and display data from the backend canister instead of appearing empty.
 
 **Planned changes:**
-- Update the backend market data query function to return a structured Result/error variant instead of silent zeros/nulls when the ICDex canister call fails, and log failures to the activity log.
-- Update the frontend MarketDataPanel to handle the new error variant, display explicit error messages when the fetch fails, and retry on the existing polling interval.
-- Ensure Mid Price, Best Bid, Best Ask, Buy Levels, and Sell Levels show live formatted values when the ICDex canister is reachable.
+- Audit and fix `useQueries.ts` hooks for grid levels, open orders, and trade history to ensure the actor is initialized before queries fire, errors are propagated (not swallowed), and polling intervals are active
+- Fix the Grid Levels panel to fetch and display real buy/sell price levels, with distinct loading, error, and empty states
+- Fix the Open Orders panel to fetch and display active orders, with distinct loading, error, and empty states
+- Fix the Trade History panel to fetch and display past trades in reverse-chronological order, with distinct loading, error, and empty states
+- Ensure backend queries for all three panels return correct structured data when records exist
 
-**User-visible outcome:** The Market Data LIVE panel shows real price and order book values when the ICDex canister is reachable, and displays a clear error message (instead of silent dashes or zeros) when the fetch fails, with automatic retries on the polling interval.
+**User-visible outcome:** The Grid Levels, Open Orders, and Trade History panels display real data when available, show loading skeletons while fetching, and surface error messages on failure instead of silently rendering empty lists.

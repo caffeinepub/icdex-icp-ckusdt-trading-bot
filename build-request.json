@@ -1,60 +1,93 @@
 {
   "kind": "build_request",
-  "title": "Fix Market Data LIVE zeroed values",
+  "title": "Fix Grid Levels, Open Orders, and Trade History showing empty data",
   "projectName": "ICDex Trading Bot",
-  "priority": "normal",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the Market Data LIVE section so that Mid Price, Best Bid, Best Ask, Buy Levels, and Sell Levels display real values instead of dashes or zeros. The issue is that the ICDex quote/order-book fetch is failing silently; add proper error surfacing and a retry/fallback so the UI shows either a live value or a clear error message rather than blank dashes.",
-      "target": "frontend",
+      "text": "Investigate and fix the Grid Preview Table (grid levels) panel so that it correctly fetches and displays current grid price levels from the backend canister. Ensure loading, error, and empty states are handled distinctly — empty state should only appear if the backend genuinely returns zero grid levels, not due to a fetch failure or uninitialized actor.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-1",
-          "msg-2"
+          "msg-latest"
         ],
         "quotes": [
-          "Mid Price (ICP/ckUSDT)—\nBest Bid—\nBest Ask—\nBuy Levels0\nSell Levels0",
-          "vamos tentar essa abordagem tente corrigir a área de Market Data"
+          "Grid level. Esses aparecem vazios."
         ]
       },
       "acceptanceCriteria": [
-        "MarketDataPanel displays a non-zero Mid Price when the ICDex canister is reachable.",
-        "Best Bid and Best Ask show formatted price values instead of dashes.",
-        "Buy Levels and Sell Levels show a count greater than zero when the order book is populated.",
-        "If the ICDex fetch fails, an explicit error message (not silent dashes) is shown in the panel.",
-        "The panel retries the data fetch automatically on a polling interval consistent with the existing LIVE indicator."
+        "Grid levels panel shows real buy/sell price levels when the bot has an active grid configured",
+        "A loading skeleton is shown while data is being fetched",
+        "An error message is displayed if the fetch fails, rather than an empty list",
+        "Backend query for grid levels returns structured data including price levels, not an empty array, when grid is active"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In the backend, ensure the query function that retrieves market data (mid price, best bid/ask, order book levels) from the ICDex canister returns a structured error variant when the external call fails rather than returning zero/null silently. Log the failure to the activity log so the operator can diagnose the root cause.",
-      "target": "backend",
+      "text": "Investigate and fix the Open Orders panel so that it correctly fetches and displays open orders from the backend canister. Ensure the panel distinguishes between a genuine empty order book and a failed/unresolved query — errors must surface visibly rather than silently rendering an empty list.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-1",
-          "msg-2"
+          "msg-latest"
         ],
         "quotes": [
-          "a chamada ao ICDex para buscar cotações (getQuotes ou level10) está falhando silenciosamente"
+          "Open orders. Esses aparecem vazios."
         ]
       },
       "acceptanceCriteria": [
-        "The backend query for market data returns a Result or variant type that distinguishes success from failure.",
-        "A failure from the ICDex canister call is caught and its description is appended to the activity log.",
-        "Zero values are never returned when the underlying call failed; an error variant is returned instead."
+        "Open orders panel shows all currently placed buy and sell orders when orders exist on the canister",
+        "A loading skeleton is shown while data is being fetched",
+        "An error message is displayed if the fetch fails, rather than an empty list",
+        "Backend query for open orders returns the correct list of active orders"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Investigate and fix the Trade History panel so that it correctly fetches and displays past trades from the backend canister. Ensure the panel distinguishes between a genuine empty history and a failed/unresolved query — errors must surface visibly rather than silently rendering an empty list.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "Trade History. Esses aparecem vazios."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Trade history panel shows past trades (filled, cancelled, open) in reverse-chronological order when history exists",
+        "A loading skeleton is shown while data is being fetched",
+        "An error message is displayed if the fetch fails, rather than an empty list",
+        "Backend query for trade history returns actual trade records, not an empty array, when trades have occurred"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Audit the useQueries.ts hooks for grid levels, open orders, and trade history to ensure: (1) the actor is fully initialized before queries fire, (2) canister health-check guards are not incorrectly blocking these queries, (3) polling intervals are active, and (4) fetch errors are propagated to the UI rather than swallowed.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "Grid level. Open orders. Trade History. Esses aparecem vazios."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Queries for grid levels, open orders, and trade history are not gated behind conditions that permanently prevent them from running",
+        "Errors from these queries are reflected in the isError state and surfaced to the corresponding panel components",
+        "Polling is active for all three queries while the dashboard is open"
       ]
     }
   ],
   "constraints": [
-    "Changes must be minimal and focused — do not refactor unrelated panels or hooks.",
-    "Do not alter the bot start/stop logic or order management code.",
-    "Keep the single-actor Motoko architecture intact."
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
+    "Preserve all existing backend state and data structures; do not alter storage variables or break existing functionality"
   ],
   "nonGoals": [
-    "Redesigning the dashboard layout or other panels.",
-    "Adding new trading strategy logic.",
-    "Changing authentication or Internet Identity integration."
+    "Redesigning the visual layout or theme of any panel",
+    "Adding new trading features or bot configuration options",
+    "Modifying the Market Data LIVE panel (already fixed in Version 34)"
   ],
   "imageRequirements": {
     "required": [],

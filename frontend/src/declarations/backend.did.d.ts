@@ -40,6 +40,7 @@ export interface _SERVICE {
     { 'intervalSeconds' : bigint, 'spreadBps' : bigint, 'numOrders' : bigint }
   >,
   'getLastGrid' : ActorMethod<[], Array<[string, bigint]>>,
+  'getOpenOrders' : ActorMethod<[], Array<OrderEntry>>,
   'getTradeHistory' : ActorMethod<[], Array<OrderEntry>>,
   'healthCheck' : ActorMethod<[], boolean>,
   'pending' : ActorMethod<[], Array<OrderEntry>>,

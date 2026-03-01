@@ -1,4 +1,4 @@
-import { LayoutGrid, RefreshCw, Inbox, AlertCircle } from 'lucide-react';
+import { LayoutGrid, RefreshCw, Inbox, AlertCircle, Loader2 } from 'lucide-react';
 import { useLastGrid, useBotStatus } from '@/hooks/useQueries';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,8 +12,21 @@ function formatPrice(value: bigint): string {
 }
 
 export function GridPreviewTable() {
-    const { data: grid, isLoading, isFetching, isError, refetch, dataUpdatedAt } = useLastGrid();
+    const {
+        data: grid,
+        isLoading,
+        isFetching,
+        isError,
+        error,
+        refetch,
+        dataUpdatedAt,
+        fetchStatus,
+    } = useLastGrid();
     const { data: isRunning } = useBotStatus();
+
+    // isLoading is true only on the very first fetch (no cached data yet)
+    // fetchStatus === 'fetching' covers background refetches too
+    const isInitialLoading = isLoading && fetchStatus === 'fetching';
 
     const gridLevels = grid ?? [];
     const hasData = gridLevels.length > 0;
@@ -44,7 +57,7 @@ export function GridPreviewTable() {
                 <div className="flex items-center gap-2">
                     <LayoutGrid className="w-4 h-4 text-muted-foreground" />
                     <span className="terminal-label">Grid Levels</span>
-                    {hasData && (
+                    {hasData && !isInitialLoading && (
                         <div className="flex items-center gap-1.5 ml-1">
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-terminal-buy/10 text-terminal-buy border border-terminal-buy/30">
                                 {buys.length} BUY
@@ -66,19 +79,21 @@ export function GridPreviewTable() {
             </div>
 
             {/* Content */}
-            {isLoading ? (
+            {isInitialLoading ? (
+                /* Loading skeletons */
                 <div className="flex flex-col gap-2">
                     {Array.from({ length: 8 }).map((_, i) => (
                         <Skeleton key={i} className="h-7 w-full bg-muted" />
                     ))}
                 </div>
             ) : isError ? (
+                /* Error state */
                 <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
                     <AlertCircle className="w-7 h-7 text-terminal-sell opacity-60" />
                     <div className="flex flex-col gap-1">
                         <span className="text-sm font-mono text-terminal-sell">Failed to load grid</span>
                         <span className="text-xs font-mono text-muted-foreground opacity-70">
-                            Check canister connectivity
+                            {error instanceof Error ? error.message : 'Check canister connectivity'}
                         </span>
                     </div>
                     <button
@@ -89,6 +104,7 @@ export function GridPreviewTable() {
                     </button>
                 </div>
             ) : !hasData ? (
+                /* Empty state — data was fetched successfully but grid is empty */
                 <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
                     <Inbox className="w-7 h-7 text-muted-foreground opacity-40" />
                     <div className="flex flex-col gap-1">
@@ -97,8 +113,15 @@ export function GridPreviewTable() {
                             {isRunning ? 'Waiting for first bot cycle…' : 'Start the bot to generate grid levels'}
                         </span>
                     </div>
+                    {isFetching && (
+                        <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground opacity-60">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Checking…</span>
+                        </div>
+                    )}
                 </div>
             ) : (
+                /* Grid table */
                 <ScrollArea className="flex-1 max-h-[380px]">
                     {/* Table header */}
                     <div className="grid grid-cols-[3rem_1fr] gap-2 px-3 py-1.5 border-b border-border sticky top-0 bg-card z-10">
@@ -107,7 +130,7 @@ export function GridPreviewTable() {
                     </div>
 
                     {/* Sell levels — highest to lowest */}
-                    {sells.map(([side, price], i) => (
+                    {sells.map(([, price], i) => (
                         <div
                             key={`sell-${i}`}
                             className="grid grid-cols-[3rem_1fr] gap-2 px-3 py-2 border-b border-border/40 hover:bg-terminal-sell/5 transition-colors"
@@ -127,14 +150,14 @@ export function GridPreviewTable() {
                             <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
                                 Mid
                             </span>
-                            <span className="text-xs font-mono font-semibold text-foreground ml-auto">
+                            <span className="text-xs font-mono font-bold text-foreground tabular-nums ml-auto">
                                 {formatPrice(midPrice)}
                             </span>
                         </div>
                     )}
 
                     {/* Buy levels — highest to lowest */}
-                    {buys.map(([side, price], i) => (
+                    {buys.map(([, price], i) => (
                         <div
                             key={`buy-${i}`}
                             className="grid grid-cols-[3rem_1fr] gap-2 px-3 py-2 border-b border-border/40 hover:bg-terminal-buy/5 transition-colors"
@@ -151,7 +174,7 @@ export function GridPreviewTable() {
             )}
 
             {/* Footer */}
-            {lastUpdated && (
+            {lastUpdated && !isInitialLoading && (
                 <div className="flex items-center text-xs font-mono text-muted-foreground pt-1 border-t border-border">
                     <span>Updated: {lastUpdated}</span>
                     {hasData && (

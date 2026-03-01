@@ -1,28 +1,87 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Market Data LIVE zeroed values",
+  "title": "Fix Grid Levels, Open Orders, and Trade History showing empty data",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Fix the Market Data LIVE section to display real values (Mid Price, Best Bid, Best Ask, Buy/Sell Levels) instead of dashes or zeros by adding proper error surfacing, retry logic, and fallback behavior when the ICDex quote/order-book fetch fails",
+      "summary": "Fix Grid Preview Table panel to correctly fetch and display grid price levels with proper loading, error, and empty state handling",
       "acceptanceCriteria": [
-        "MarketDataPanel displays a non-zero Mid Price when the ICDex canister is reachable.",
-        "Best Bid and Best Ask show formatted price values instead of dashes.",
-        "Buy Levels and Sell Levels show a count greater than zero when the order book is populated.",
-        "If the ICDex fetch fails, an explicit error message (not silent dashes) is shown in the panel.",
-        "The panel retries the data fetch automatically on a polling interval consistent with the existing LIVE indicator."
+        "Grid levels panel shows real buy/sell price levels when the bot has an active grid configured",
+        "A loading skeleton is shown while data is being fetched",
+        "An error message is displayed if the fetch fails, rather than an empty list",
+        "Backend query for grid levels returns structured data including price levels, not an empty array, when grid is active"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/MarketDataPanel.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Enhance the MarketDataPanel component to display Best Bid, Best Ask, Buy Levels, and Sell Levels from the order book data instead of only showing the derived mid price. Add explicit error state handling to show a clear error message when the fetch fails. Ensure the panel surfaces the error from the backend query instead of silently showing dashes. Update the LIVE status indicator logic to reflect fetch success/failure and include retry behavior on the existing polling interval."
+          "description": "Audit and fix the useGridLevels query hook to ensure: (1) the actor is fully initialized before the query fires, (2) canister health-check guards do not incorrectly block this query, (3) polling interval is active, and (4) fetch errors are properly propagated to the UI. Remove any conditions that prevent the query from running when the actor is ready. Ensure the query refetchInterval is active and the enabled condition checks both actor existence and health status correctly."
         },
+        {
+          "path": "frontend/src/components/GridPreviewTable.tsx",
+          "operation": "modify",
+          "description": "Update the component to properly handle three distinct states: (1) loading state with skeletons when isLoading is true, (2) error state with a visible error message when isError is true, and (3) empty state only when data is successfully fetched but contains zero grid levels. Ensure the component does not conflate fetch failures with empty results. Add conditional rendering to show the appropriate UI based on query state (isLoading, isError, isEmpty)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Fix Open Orders panel to correctly fetch and display open orders with proper loading, error, and empty state handling",
+      "acceptanceCriteria": [
+        "Open orders panel shows all currently placed buy and sell orders when orders exist on the canister",
+        "A loading skeleton is shown while data is being fetched",
+        "An error message is displayed if the fetch fails, rather than an empty list",
+        "Backend query for open orders returns the correct list of active orders"
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add a new React Query hook (e.g., useMarketData) that fetches market data (mid price, best bid, best ask, order book levels) from the backend. Configure the hook to poll at an interval consistent with the existing LIVE indicator, handle errors explicitly by surfacing the backend error variant, and retry on failure. Ensure that when the backend returns an error variant, the query error state is populated so the MarketDataPanel can display a meaningful error message instead of dashes or zeros."
+          "description": "Audit and fix the useOpenOrders query hook to ensure: (1) the actor is fully initialized before the query fires, (2) canister health-check guards do not incorrectly block this query, (3) polling interval is active, and (4) fetch errors are properly propagated to the UI. Remove any conditions that prevent the query from running when the actor is ready. Ensure the query refetchInterval is active and the enabled condition checks both actor existence and health status correctly."
+        },
+        {
+          "path": "frontend/src/components/OpenOrdersPanel.tsx",
+          "operation": "modify",
+          "description": "Update the component to properly handle three distinct states: (1) loading state with skeletons when isLoading is true, (2) error state with a visible error message when isError is true, and (3) empty state only when data is successfully fetched but contains zero open orders. Ensure the component does not conflate fetch failures with empty results. Add conditional rendering to show the appropriate UI based on query state (isLoading, isError, isEmpty)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Fix Trade History panel to correctly fetch and display past trades with proper loading, error, and empty state handling",
+      "acceptanceCriteria": [
+        "Trade history panel shows past trades (filled, cancelled, open) in reverse-chronological order when history exists",
+        "A loading skeleton is shown while data is being fetched",
+        "An error message is displayed if the fetch fails, rather than an empty list",
+        "Backend query for trade history returns actual trade records, not an empty array, when trades have occurred"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit and fix the useTradeHistory query hook to ensure: (1) the actor is fully initialized before the query fires, (2) canister health-check guards do not incorrectly block this query, (3) polling interval is active, and (4) fetch errors are properly propagated to the UI. Remove any conditions that prevent the query from running when the actor is ready. Ensure the query refetchInterval is active and the enabled condition checks both actor existence and health status correctly."
+        },
+        {
+          "path": "frontend/src/components/TradeHistoryPanel.tsx",
+          "operation": "modify",
+          "description": "Update the component to properly handle three distinct states: (1) loading state with skeletons when isLoading is true, (2) error state with a visible error message when isError is true, and (3) empty state only when data is successfully fetched but contains zero trade history records. Ensure the component does not conflate fetch failures with empty results. Add conditional rendering to show the appropriate UI based on query state (isLoading, isError, isEmpty)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Audit useQueries.ts hooks for grid levels, open orders, and trade history to ensure proper actor initialization, query execution, and error propagation",
+      "acceptanceCriteria": [
+        "Queries for grid levels, open orders, and trade history are not gated behind conditions that permanently prevent them from running",
+        "Errors from these queries are reflected in the isError state and surfaced to the corresponding panel components",
+        "Polling is active for all three queries while the dashboard is open"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Perform a comprehensive audit of the useGridLevels, useOpenOrders, and useTradeHistory query hooks. Verify that: (1) each query's enabled condition only checks for actor existence and does not incorrectly depend on canister health status in a way that blocks data queries, (2) each query has an active refetchInterval for polling, (3) query functions properly handle and throw errors rather than swallowing them, and (4) the useActor dependency is correctly tracked so queries refetch when the actor changes. If health checks are blocking these queries, adjust the enabled logic to allow queries to run and surface their own errors independently of health status."
         }
       ]
     }

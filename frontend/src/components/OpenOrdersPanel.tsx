@@ -60,8 +60,20 @@ function OrderRow({ entry, index, dimmed }: { entry: OrderEntry; index: number; 
 }
 
 export function OpenOrdersPanel() {
-    const { data: orders, isLoading, isFetching, isError, refetch, dataUpdatedAt } = useOpenOrders();
+    const {
+        data: orders,
+        isLoading,
+        isFetching,
+        isError,
+        error,
+        refetch,
+        dataUpdatedAt,
+        fetchStatus,
+    } = useOpenOrders();
     const cancelAll = useCancelAllOrders();
+
+    // isLoading is true only on the very first fetch (no cached data yet)
+    const isInitialLoading = isLoading && fetchStatus === 'fetching';
 
     const allOrders = orders ?? [];
     const hasData = allOrders.length > 0;
@@ -99,7 +111,7 @@ export function OpenOrdersPanel() {
                 <div className="flex items-center gap-2">
                     <ListOrdered className="w-4 h-4 text-muted-foreground" />
                     <span className="terminal-label">Open Orders</span>
-                    {hasData && !isCancelling && (
+                    {hasData && !isCancelling && !isInitialLoading && (
                         <div className="flex items-center gap-1">
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-terminal-buy/10 text-terminal-buy border border-terminal-buy/30">
                                 {buyCount} BUY
@@ -166,19 +178,21 @@ export function OpenOrdersPanel() {
             )}
 
             {/* Content */}
-            {isLoading ? (
+            {isInitialLoading ? (
+                /* Loading skeletons */
                 <div className="flex flex-col gap-2">
                     {Array.from({ length: 6 }).map((_, i) => (
                         <Skeleton key={i} className="h-8 w-full bg-muted" />
                     ))}
                 </div>
             ) : isError ? (
+                /* Error state */
                 <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
                     <AlertCircle className="w-7 h-7 text-terminal-sell opacity-60" />
                     <div className="flex flex-col gap-1">
                         <span className="text-sm font-mono text-terminal-sell">Failed to fetch orders</span>
                         <span className="text-xs font-mono text-muted-foreground opacity-70">
-                            Check canister connectivity
+                            {error instanceof Error ? error.message : 'Check canister connectivity'}
                         </span>
                     </div>
                     <button
@@ -211,18 +225,25 @@ export function OpenOrdersPanel() {
                     </ScrollArea>
                 </div>
             ) : !hasData ? (
-                <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+                /* Empty state */
+                <div className="flex flex-col items-center justify-center py-10 gap-3 text-center flex-1">
                     <Inbox className="w-7 h-7 text-muted-foreground opacity-40" />
                     <div className="flex flex-col gap-1">
                         <span className="text-sm font-mono text-muted-foreground">No open orders</span>
-                        <span className="text-xs font-mono text-muted-foreground opacity-60">
-                            Active ICDex orders will appear here
+                        <span className="text-xs font-mono text-muted-foreground opacity-60 max-w-[200px]">
+                            Active orders will appear here when the bot places them
                         </span>
                     </div>
+                    {isFetching && (
+                        <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground opacity-60">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Checking…</span>
+                        </div>
+                    )}
                 </div>
             ) : (
+                /* Orders table */
                 <ScrollArea className="flex-1 max-h-[380px]">
-                    {/* Table header */}
                     <div className="grid grid-cols-[2.5rem_3rem_1fr_1fr_3.5rem] gap-2 px-3 py-1.5 border-b border-border sticky top-0 bg-card z-10">
                         <span className="text-[10px] font-mono text-muted-foreground">#</span>
                         <span className="text-[10px] font-mono text-muted-foreground">SIDE</span>
@@ -230,7 +251,6 @@ export function OpenOrdersPanel() {
                         <span className="text-[10px] font-mono text-muted-foreground text-right">QTY (ICP)</span>
                         <span className="text-[10px] font-mono text-muted-foreground text-right">TIME</span>
                     </div>
-
                     {sortedOrders.map((order, i) => (
                         <OrderRow key={`${order.orderId}-${i}`} entry={order} index={i} />
                     ))}
@@ -238,10 +258,10 @@ export function OpenOrdersPanel() {
             )}
 
             {/* Footer */}
-            {lastUpdated && (
+            {lastUpdated && !isInitialLoading && (
                 <div className="flex items-center text-xs font-mono text-muted-foreground pt-1 border-t border-border">
                     <span>Updated: {lastUpdated}</span>
-                    {hasData && !isCancelling && (
+                    {hasData && (
                         <span className="ml-auto opacity-60">{allOrders.length} orders</span>
                     )}
                 </div>

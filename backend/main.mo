@@ -3,13 +3,12 @@ import Time "mo:core/Time";
 import Nat "mo:core/Nat";
 import Map "mo:core/Map";
 import Queue "mo:core/Queue";
-import Iter "mo:core/Iter";
 import Timer "mo:core/Timer";
+import Iter "mo:core/Iter";
+import Migration "migration";
 
-
-
+(with migration = Migration.run)
 actor {
-  // ICDex Types (no HTTP outcalls yet)
   type Side = { #buy; #sell };
   type OrderType = { #limit; #market; #chase; #post_only };
   type OrderId = Nat;
@@ -290,8 +289,11 @@ actor {
     };
   };
 
-  // New health check method that always responds, inspired by HTTP outcall structure.
   public query ({ caller }) func healthCheck() : async Bool {
-    true; // Always return true to signal canister is alive.
+    true;
+  };
+  
+  public query ({ caller }) func getOpenOrders() : async [OrderEntry] {
+    openOrderMap.values().toVarArray<OrderEntry>().toArray();
   };
 };

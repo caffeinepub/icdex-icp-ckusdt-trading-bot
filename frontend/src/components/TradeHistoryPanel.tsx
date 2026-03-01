@@ -1,4 +1,4 @@
-import { History, RefreshCw, Inbox, AlertCircle } from 'lucide-react';
+import { History, RefreshCw, Inbox, AlertCircle, Loader2 } from 'lucide-react';
 import { useTradeHistory } from '@/hooks/useQueries';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -82,7 +82,19 @@ function TradeRow({ entry }: { entry: OrderEntry }) {
 }
 
 export function TradeHistoryPanel() {
-    const { data: trades, isLoading, isFetching, isError, refetch, dataUpdatedAt } = useTradeHistory();
+    const {
+        data: trades,
+        isLoading,
+        isFetching,
+        isError,
+        error,
+        refetch,
+        dataUpdatedAt,
+        fetchStatus,
+    } = useTradeHistory();
+
+    // isLoading is true only on the very first fetch (no cached data yet)
+    const isInitialLoading = isLoading && fetchStatus === 'fetching';
 
     // Sort reverse-chronological (newest first)
     const sortedTrades = [...(trades ?? [])].sort((a, b) => {
@@ -104,7 +116,7 @@ export function TradeHistoryPanel() {
                 <div className="flex items-center gap-2">
                     <History className="w-4 h-4 text-muted-foreground" />
                     <span className="terminal-label">Trade History</span>
-                    {hasData && (
+                    {hasData && !isInitialLoading && (
                         <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted/40 text-muted-foreground border border-border">
                             {sortedTrades.length}
                         </span>
@@ -121,7 +133,7 @@ export function TradeHistoryPanel() {
             </div>
 
             {/* Loading state */}
-            {isLoading ? (
+            {isInitialLoading ? (
                 <div className="flex flex-col gap-2">
                     {Array.from({ length: 6 }).map((_, i) => (
                         <Skeleton key={i} className="h-8 w-full bg-muted" />
@@ -134,7 +146,7 @@ export function TradeHistoryPanel() {
                     <div className="flex flex-col gap-1">
                         <span className="text-sm font-mono text-terminal-sell">Failed to fetch history</span>
                         <span className="text-xs font-mono text-muted-foreground opacity-70">
-                            Check canister connectivity
+                            {error instanceof Error ? error.message : 'Check canister connectivity'}
                         </span>
                     </div>
                     <button
@@ -154,6 +166,12 @@ export function TradeHistoryPanel() {
                             Completed and cancelled orders will appear here
                         </span>
                     </div>
+                    {isFetching && (
+                        <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground opacity-60 mt-1">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Checking…</span>
+                        </div>
+                    )}
                 </div>
             ) : (
                 /* Table */
@@ -174,7 +192,7 @@ export function TradeHistoryPanel() {
             )}
 
             {/* Footer */}
-            {lastUpdated && (
+            {lastUpdated && !isInitialLoading && (
                 <div className="flex items-center text-xs font-mono text-muted-foreground pt-1 border-t border-border">
                     <span>Updated: {lastUpdated}</span>
                     {hasData && (
