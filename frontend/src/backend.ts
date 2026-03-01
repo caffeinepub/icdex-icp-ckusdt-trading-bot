@@ -125,6 +125,7 @@ export interface backendInterface {
     }>;
     getLastGrid(): Promise<Array<[string, bigint]>>;
     getTradeHistory(): Promise<Array<OrderEntry>>;
+    healthCheck(): Promise<boolean>;
     pending(): Promise<Array<OrderEntry>>;
     startBot(): Promise<void>;
     stopBot(): Promise<void>;
@@ -232,6 +233,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getTradeHistory();
             return from_candid_vec_n1(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async healthCheck(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.healthCheck();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.healthCheck();
+            return result;
         }
     }
     async pending(): Promise<Array<OrderEntry>> {

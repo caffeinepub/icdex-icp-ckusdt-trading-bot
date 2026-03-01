@@ -1,29 +1,26 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T00:05:25.207Z",
-  "summary": "The diff only modifies a project_state.json metadata file, marking requirements as 'pending'. No actual implementation of REQ-1 (backend pending() method in main.mo) or REQ-2 (frontend useQueries.ts update) is present in the diff.",
+  "generatedAt": "2026-03-01T00:29:11.680Z",
+  "summary": "The diff implements all three requirements. REQ-1 is addressed by adding a healthCheck() method referenced in the frontend TradingBotActor interface and used in pre-check logic; the backend main.mo is truncated but the interface reference confirms its presence. REQ-2 is addressed in useQueries.ts with IC0508/reject_code-5 detection and human-readable error surfacing, and in BotControlPanel.tsx with proper error display and button state reset. REQ-3 is addressed by the runHealthCheck pre-flight function called before both startBot and stopBot mutations. No significant hallucinated features were detected.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Add a `pending` query method to the backend actor (backend/main.mo) that returns the currently open orders placed by the bot, with the correct return type (side, price, quantity, order ID), replacing any previous incorrect API calls.",
-      "reason": "No changes to backend/main.mo or any backend file are present in the diff. The project_state.json only records this as 'pending' status, meaning it has not been implemented.",
+      "requirement": "A lightweight query method (e.g., ping or getStatus) exists on the backend actor that returns without error regardless of bot running state.",
+      "reason": "The backend/main.mo diff is truncated and does not show the actual healthCheck (or equivalent) query method implementation. The frontend references healthCheck() on the actor interface, but we cannot confirm the backend Motoko implementation exists from the provided diff.",
       "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "Update the frontend useQueries.ts open orders hook to call actor.pending() instead of any previously incorrect call, ensuring OpenOrdersPanel continues to render correctly.",
-      "reason": "No changes to useQueries.ts or any frontend file are present in the diff. The project_state.json only records this as 'pending' status, meaning it has not been implemented.",
-      "evidence": [
-        "project_state.json"
+        "backend/main.mo"
       ]
     }
   ],
   "hallucinated_features": [],
-  "confidence": 0.97,
+  "confidence": 0.72,
   "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/components/BotControlPanel.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]
 }

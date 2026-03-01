@@ -43,6 +43,7 @@ export interface backendInterface {
     }>;
     getLastGrid(): Promise<Array<[string, bigint]>>;
     getTradeHistory(): Promise<Array<OrderEntry>>;
+    healthCheck(): Promise<boolean>;
     pending(): Promise<Array<OrderEntry>>;
     startBot(): Promise<void>;
     stopBot(): Promise<void>;

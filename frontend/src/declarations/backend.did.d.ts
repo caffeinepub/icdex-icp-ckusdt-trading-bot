@@ -41,6 +41,7 @@ export interface _SERVICE {
   >,
   'getLastGrid' : ActorMethod<[], Array<[string, bigint]>>,
   'getTradeHistory' : ActorMethod<[], Array<OrderEntry>>,
+  'healthCheck' : ActorMethod<[], boolean>,
   'pending' : ActorMethod<[], Array<OrderEntry>>,
   'startBot' : ActorMethod<[], undefined>,
   'stopBot' : ActorMethod<[], undefined>,

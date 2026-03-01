@@ -1,37 +1,44 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Bot order management project with pending order consultation method replacing incorrect API calls.",
-  "architectural_notes": [],
-  "known_issues": [],
+  "summary": "ICP canister project (canister ID: erwl3-piaaa-aaaau-ae5la-cai) with a bot feature. Currently experiencing a stopped canister error when calling startBot.",
+  "architectural_notes": [
+    "Deployed on Internet Computer Protocol (ICP); canister ID: erwl3-piaaa-aaaau-ae5la-cai"
+  ],
+  "known_issues": [
+    "IC0508: Canister erwl3-piaaa-aaaau-ae5la-cai is stopped — startBot call rejected with reject code 5"
+  ],
   "isFixRequest": true,
-  "existing_features": [],
+  "existing_features": [
+    {
+      "id": "feature-in-the-botcontrolpanel-and-the-usequeries-hooks-wrap-the-startbot-mutation-call-with-error-handling-that-detects-ic0508-canister-stopped-reject-code-5-and-surfaces-a-clear-human-readable-error-message-to-the-user-instead-of-a-raw-rejection-dump",
+      "title": "In the BotControlPanel and the useQueries hooks, wrap the startBot mutation call with error handling that detects IC0508 (canister stopped / reject code 5) and surfaces a clear, human-readable error message to the user instead of a raw rejection dump.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-canister-availability-pre-check-in-the-startbot-and-stopbot-mutation-flows-before-invoking-the-mutation-call-the-lightweight-query-method-ping-getstatus-and-if-it-fails-or-indicates-the-canister-is-unavailable-abort-with-a-friendly-error-rather-than-letting-the-update-call-fail-with-a-raw-ic-error",
+      "title": "Add a canister availability pre-check in the startBot and stopBot mutation flows: before invoking the mutation, call the lightweight query method (ping/getStatus) and if it fails or indicates the canister is unavailable, abort with a friendly error rather than letting the update call fail with a raw IC error.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    }
+  ],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Implement pending method to consult open bot orders, replacing any incorrect API calls",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Add a `pending` query method to the backend actor that returns the currently open orders placed by the bot. This method should replace any incorrect or placeholder calls previously used to retrieve open orders, and must return the same order data shape already used in the codebase (side, price, quantity, order ID).",
+      "summary": "Add a canister health/status check in the backend that can be called even when the bot is in a stopped or idle state, so the frontend can determine canister availability before attempting state-changing calls like startBot.",
       "reqIds": [
         "REQ-1"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Update the frontend `useQueries.ts` open orders hook to call the backend `pending` method instead of any previously incorrect call. Ensure the OpenOrdersPanel continues to display the fetched orders correctly.",
-      "reqIds": [
-        "REQ-2"
       ],
       "status": "pending"
     }
   ],
   "gameProjectType": "none",
-  "projectName": "ICDex Grid Bot",
+  "projectName": "Handle stopped canister state gracefully and add canister health check",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

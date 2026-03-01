@@ -1,38 +1,63 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T00:05:25.210Z",
+  "generatedAt": "2026-03-01T00:29:11.683Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 0,
+    "total": 3,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add a `pending` query method to the backend actor that returns the currently open orders placed by the bot. This method should replace any incorrect or placeholder calls previously used to retrieve open orders, and must return the same order data shape already used in the codebase (side, price, quantity, order ID).",
+        "summary": "Add a canister health/status check in the backend that can be called even when the bot is in a stopped or idle state, so the frontend can determine canister availability before attempting state-changing calls like startBot.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Update the frontend `useQueries.ts` open orders hook to call the backend `pending` method instead of any previously incorrect call. Ensure the OpenOrdersPanel continues to display the fetched orders correctly.",
-        "status": "missing",
+        "summary": "In the BotControlPanel and the useQueries hooks, wrap the startBot mutation call with error handling that detects IC0508 (canister stopped / reject code 5) and surfaces a clear, human-readable error message to the user instead of a raw rejection dump.",
+        "status": "implemented",
         "plannedFiles": [
           "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/OpenOrdersPanel.tsx"
+          "frontend/src/components/BotControlPanel.tsx"
         ],
-        "matchedFiles": []
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/BotControlPanel.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Add a canister availability pre-check in the startBot and stopBot mutation flows: before invoking the mutation, call the lightweight query method (ping/getStatus) and if it fails or indicates the canister is unavailable, abort with a friendly error rather than letting the update call fail with a raw IC error.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/BotControlPanel.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/BotControlPanel.tsx"
+        ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
+    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/BotControlPanel.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

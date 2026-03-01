@@ -1,26 +1,47 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Implement pending() method to query open bot orders",
+  "title": "Handle stopped canister state gracefully and add canister health check",
   "requirements": [
     {
       "id": "REQ-2",
-      "summary": "Update the frontend open orders hook to call the backend `pending` method instead of any previously incorrect call, ensuring OpenOrdersPanel displays fetched orders correctly.",
+      "summary": "Wrap startBot mutation with error handling to detect IC0508 (canister stopped) and surface a clear, human-readable error message instead of raw rejection.",
       "acceptanceCriteria": [
-        "The open orders React Query hook in useQueries.ts calls `actor.pending()` (or equivalent generated name).",
-        "The OpenOrdersPanel renders the orders returned by the `pending` call without regression.",
-        "No stale or incorrect actor method name remains in the open orders query."
+        "When startBot is called and the canister returns IC0508 / reject code 5, the UI displays a user-friendly error message such as 'The canister is currently stopped. Please wait and try again.'",
+        "The raw rejection JSON is not shown to the user.",
+        "The Start button returns to its default (non-loading) state after the error is caught."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Update the open orders React Query hook to call `actor.pending()` instead of any previous incorrect backend method. Ensure the query key, staleTime, and enabled conditions remain unchanged. The `pending` method returns Array<OrderEntry> matching the existing order data shape (side, price, quantity, orderId, status, timestamp)."
+          "description": "Modify the startBot mutation to wrap the backend call with a try-catch block that detects IC0508 (reject code 5) errors. When caught, throw a user-friendly Error with message 'The canister is currently stopped. Please wait and try again.' instead of propagating the raw rejection. Keep all other errors unchanged."
         },
         {
-          "path": "frontend/src/components/OpenOrdersPanel.tsx",
+          "path": "frontend/src/components/BotControlPanel.tsx",
           "operation": "modify",
-          "description": "Verify that the OpenOrdersPanel correctly consumes the updated open orders query hook and renders the orders returned by `actor.pending()` without regression. Ensure buy/sell counts, sorting by side and price, and the 'Cancel All' button functionality remain intact."
+          "description": "Update the BotControlPanel to display error messages from the startBot mutation (mutation.error?.message) in a user-friendly format. Ensure the Start button returns to its default non-loading state when mutation.isError is true. Use existing UI components for error display (e.g., error text with appropriate styling)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Add a canister availability pre-check before startBot and stopBot mutations by calling the lightweight healthCheck query; abort with a friendly error if unavailable.",
+      "acceptanceCriteria": [
+        "If the pre-check query fails before startBot/stopBot, the user sees a clear message that the canister is not reachable.",
+        "The mutation is not dispatched to the canister if the pre-check indicates unavailability.",
+        "Normal start/stop flow is unaffected when the canister is running."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Modify the startBot and stopBot mutations to call the backend healthCheck query method before invoking the mutation. If healthCheck returns false or throws an error, abort the mutation immediately and throw a user-friendly Error with message 'The canister is not reachable. Please try again later.' If healthCheck succeeds, proceed with the original mutation logic. Wrap the healthCheck call in a try-catch to handle network or query failures."
+        },
+        {
+          "path": "frontend/src/components/BotControlPanel.tsx",
+          "operation": "modify",
+          "description": "Ensure that the BotControlPanel displays pre-check errors from both startBot and stopBot mutations. The error message from the pre-check (e.g., 'The canister is not reachable. Please try again later.') should be shown clearly to the user, and the relevant button (Start/Stop) should return to its default state when an error occurs."
         }
       ]
     }

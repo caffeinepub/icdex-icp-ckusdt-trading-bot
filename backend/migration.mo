@@ -1,55 +1,43 @@
 import Map "mo:core/Map";
-import Nat "mo:core/Nat";
+import Timer "mo:core/Timer";
 import Queue "mo:core/Queue";
-import Time "mo:core/Time";
 
 module {
+  // Redefine Side type for migration context.
   type Side = { #buy; #sell };
-  type OrderType = { #limit; #market; #chase; #post_only };
-  type OrderId = Nat;
-  type OrderStatus = { #open; #filled; #cancelled };
-  type OrderEntry = {
-    orderId : OrderId;
-    side : Side;
-    price : Nat;
-    quantity : Nat;
-    status : OrderStatus;
-    timestamp : Time.Time;
-  };
 
+  // LogEntry type for migration context.
   type LogEntry = {
-    timestamp : Time.Time;
+    timestamp : Int;
     eventType : Text;
     message : Text;
   };
 
-  type OldActor = {
-    intervalSeconds : Nat;
-    spreadBps : Nat;
-    numOrders : Nat;
-    botRunning : Bool;
-    lastMidPrice : Nat;
-    lastGridData : [(Side, Nat)];
-    timerId : ?Nat;
-    nextOrderId : Nat;
-    orderHistoryMap : Map.Map<Nat, OrderEntry>;
+  // Define OrderEntry type for migration context.
+  type OrderEntry = {
+    orderId : Nat;
+    side : Side;
+    price : Nat;
+    quantity : Nat;
+    status : { #open; #filled; #cancelled };
+    timestamp : Int;
   };
 
-  type NewActor = {
+  type Actor = {
     intervalSeconds : Nat;
     spreadBps : Nat;
     numOrders : Nat;
     botRunning : Bool;
     lastMidPrice : Nat;
     lastGridData : [(Side, Nat)];
-    timerId : ?Nat;
+    timerId : ?Timer.TimerId;
     nextOrderId : Nat;
     orderHistoryMap : Map.Map<Nat, OrderEntry>;
+    openOrderMap : Map.Map<Nat, OrderEntry>;
     activityLog : Queue.Queue<LogEntry>;
   };
 
-  public func run(old : OldActor) : NewActor {
-    let emptyLog = Queue.empty<LogEntry>();
-    { old with activityLog = emptyLog };
+  public func run(old : Actor) : Actor {
+    old;
   };
 };

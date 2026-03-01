@@ -5,7 +5,9 @@ import Map "mo:core/Map";
 import Queue "mo:core/Queue";
 import Iter "mo:core/Iter";
 import Timer "mo:core/Timer";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   // ICDex Types (no HTTP outcalls yet)
   type Side = { #buy; #sell };
@@ -288,5 +290,10 @@ actor {
       clearOpenOrders();
       addLogEntry("order_cancelled", "Cancelled order with ID: " # order.orderId.toText());
     };
+  };
+
+  // New health check method that always responds, inspired by HTTP outcall structure.
+  public query ({ caller }) func healthCheck() : async Bool {
+    true; // Always return true to signal canister is alive.
   };
 };

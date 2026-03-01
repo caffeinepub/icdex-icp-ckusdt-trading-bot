@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Add a `pending` query method to the backend actor to correctly retrieve open bot orders, and update the frontend to call this method.
+**Goal:** Handle stopped canister states gracefully by adding a health check endpoint and improving error handling in the frontend bot control flow.
 
 **Planned changes:**
-- Add a `pending` query function in `backend/main.mo` that returns the list of currently open bot orders using the existing order data structure (side, price, quantity, order ID)
-- Replace any incorrect or placeholder open-order API calls in the backend with this new `pending` method
-- Update the open orders React Query hook in `useQueries.ts` to call `actor.pending()` instead of any previously incorrect method
-- Ensure the `OpenOrdersPanel` continues to render orders correctly from the updated hook
+- Add a lightweight `ping` or `getStatus` query method to the backend actor (`backend/main.mo`) that responds successfully regardless of whether the bot is running or stopped
+- In the frontend, wrap `startBot` mutation calls with error handling that detects IC0508 / reject code 5 and displays a user-friendly error message instead of a raw rejection dump
+- Ensure the Start button returns to its default (non-loading) state after catching the error
+- Add a canister availability pre-check in the `startBot` and `stopBot` mutation flows that calls the lightweight query method before dispatching the update call; if the pre-check fails, abort with a friendly error message without invoking the mutation
 
-**User-visible outcome:** The Open Orders panel correctly displays the bot's currently open orders by calling the new `pending` query method, with no stale or incorrect actor calls remaining.
+**User-visible outcome:** Users see a clear, human-readable error message when the canister is stopped or unavailable, and the UI controls return to their normal state rather than displaying raw IC rejection errors.

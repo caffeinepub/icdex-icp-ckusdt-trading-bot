@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
     Play,
     Square,
@@ -6,6 +5,7 @@ import {
     AlertCircle,
     Loader2,
     Zap,
+    WifiOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,28 +21,37 @@ export function BotControlPanel() {
     const startBot = useStartBot();
     const stopBot = useStopBot();
 
-    const [actionError, setActionError] = useState<string | null>(null);
-
     const handleStart = async () => {
-        setActionError(null);
-        try {
-            await startBot.mutateAsync();
-        } catch (err) {
-            setActionError(err instanceof Error ? err.message : 'Failed to start bot');
-        }
+        startBot.reset();
+        await startBot.mutateAsync().catch(() => {
+            // error is captured in startBot.error
+        });
     };
 
     const handleStop = async () => {
-        setActionError(null);
-        try {
-            await stopBot.mutateAsync();
-        } catch (err) {
-            setActionError(err instanceof Error ? err.message : 'Failed to stop bot');
-        }
+        stopBot.reset();
+        await stopBot.mutateAsync().catch(() => {
+            // error is captured in stopBot.error
+        });
     };
 
     const isPending = startBot.isPending || stopBot.isPending;
     const botRunning = isRunning ?? false;
+
+    // Determine which error to show (most recent action)
+    const activeError = startBot.isError
+        ? startBot.error
+        : stopBot.isError
+        ? stopBot.error
+        : null;
+
+    const errorMessage = activeError instanceof Error
+        ? activeError.message
+        : activeError
+        ? 'An unexpected error occurred. Please try again.'
+        : null;
+
+    const isNotReachable = errorMessage?.includes('not reachable');
 
     return (
         <div className="terminal-card p-5 flex flex-col gap-4">
@@ -121,10 +130,14 @@ export function BotControlPanel() {
             )}
 
             {/* Action error */}
-            {actionError && (
+            {errorMessage && (
                 <div className="flex items-start gap-2 text-xs font-mono text-terminal-sell bg-terminal-sell/5 border border-terminal-sell/25 rounded px-3 py-2">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                    <span className="break-words">{actionError}</span>
+                    {isNotReachable ? (
+                        <WifiOff className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    ) : (
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    )}
+                    <span className="break-words">{errorMessage}</span>
                 </div>
             )}
 

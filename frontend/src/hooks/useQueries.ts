@@ -23,10 +23,42 @@ interface TradingBotActor {
     stopBot(): Promise<void>;
     cancelAllOpenOrders(): Promise<void>;
     cancelOneOrderTest(): Promise<void>;
+    healthCheck(): Promise<boolean>;
 }
 
 const POLL_FAST = 5_000;
 const POLL_SLOW = 15_000;
+
+// ─── Helper: detect IC0508 (canister stopped) errors ─────────────────────────
+
+function isCanisterStoppedError(err: unknown): boolean {
+    if (!err) return false;
+    const msg = String(err);
+    return (
+        msg.includes('IC0508') ||
+        msg.includes('reject_code: 5') ||
+        msg.includes('reject_code":5') ||
+        msg.includes('Canister') && msg.includes('is stopped') ||
+        (typeof err === 'object' && err !== null && 'reject_code' in err && (err as { reject_code: unknown }).reject_code === 5)
+    );
+}
+
+// ─── Helper: run health check before a mutation ───────────────────────────────
+
+async function runHealthCheck(actor: TradingBotActor): Promise<void> {
+    try {
+        const alive = await actor.healthCheck();
+        if (!alive) {
+            throw new Error('The canister is not reachable. Please try again later.');
+        }
+    } catch (err) {
+        if (err instanceof Error && err.message.includes('not reachable')) {
+            throw err;
+        }
+        // healthCheck itself threw — canister is unreachable
+        throw new Error('The canister is not reachable. Please try again later.');
+    }
+}
 
 // ─── Bot Status ───────────────────────────────────────────────────────────────
 
@@ -69,7 +101,18 @@ export function useStartBot() {
     return useMutation({
         mutationFn: async () => {
             if (!tradingActor) throw new Error('Actor not initialized');
-            return tradingActor.startBot();
+
+            // Pre-check: verify canister is reachable before attempting startBot
+            await runHealthCheck(tradingActor);
+
+            try {
+                return await tradingActor.startBot();
+            } catch (err) {
+                if (isCanisterStoppedError(err)) {
+                    throw new Error('The canister is currently stopped. Please wait and try again.');
+                }
+                throw err;
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['botStatus'] });
@@ -87,7 +130,18 @@ export function useStopBot() {
     return useMutation({
         mutationFn: async () => {
             if (!tradingActor) throw new Error('Actor not initialized');
-            return tradingActor.stopBot();
+
+            // Pre-check: verify canister is reachable before attempting stopBot
+            await runHealthCheck(tradingActor);
+
+            try {
+                return await tradingActor.stopBot();
+            } catch (err) {
+                if (isCanisterStoppedError(err)) {
+                    throw new Error('The canister is currently stopped. Please wait and try again.');
+                }
+                throw err;
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['botStatus'] });

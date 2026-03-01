@@ -1,56 +1,75 @@
 {
   "kind": "build_request",
-  "title": "Implement pending() method to query open bot orders",
-  "projectName": "ICDex Grid Bot",
-  "priority": "normal",
+  "title": "Handle stopped canister state gracefully and add canister health check",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a `pending` query method to the backend actor that returns the currently open orders placed by the bot. This method should replace any incorrect or placeholder calls previously used to retrieve open orders, and must return the same order data shape already used in the codebase (side, price, quantity, order ID).",
+      "text": "Add a canister health/status check in the backend that can be called even when the bot is in a stopped or idle state, so the frontend can determine canister availability before attempting state-changing calls like startBot.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-latest"
         ],
         "quotes": [
-          "Método pending — consultar ordens abertas do bot (substituindo qualquer chamada incorreta)"
+          "Canister erwl3-piaaa-aaaau-ae5la-cai is stopped",
+          "Method name: startBot",
+          "IC0508"
         ]
       },
       "acceptanceCriteria": [
-        "A `pending` query function exists in backend/main.mo and returns the list of open bot orders.",
-        "The return type matches the existing open order data structure used elsewhere in the actor.",
-        "Any previous incorrect API call used to fetch open orders is replaced by this `pending` method.",
-        "Calling `pending` when no orders are open returns an empty array without error."
+        "A lightweight query method (e.g., ping or getStatus) exists on the backend actor that returns without error regardless of bot running state.",
+        "The method does not require the bot to be running to respond successfully."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update the frontend `useQueries.ts` open orders hook to call the backend `pending` method instead of any previously incorrect call. Ensure the OpenOrdersPanel continues to display the fetched orders correctly.",
+      "text": "In the BotControlPanel and the useQueries hooks, wrap the startBot mutation call with error handling that detects IC0508 (canister stopped / reject code 5) and surfaces a clear, human-readable error message to the user instead of a raw rejection dump.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-latest"
         ],
         "quotes": [
-          "Método pending — consultar ordens abertas do bot (substituindo qualquer chamada incorreta)"
+          "Reject code: 5",
+          "Reject text: Canister erwl3-piaaa-aaaau-ae5la-cai is stopped",
+          "Error code: IC0508"
         ]
       },
       "acceptanceCriteria": [
-        "The open orders React Query hook in useQueries.ts calls `actor.pending()` (or equivalent generated name).",
-        "The OpenOrdersPanel renders the orders returned by the `pending` call without regression.",
-        "No stale or incorrect actor method name remains in the open orders query."
+        "When startBot is called and the canister returns IC0508 / reject code 5, the UI displays a user-friendly error message such as 'The canister is currently stopped. Please wait and try again.'",
+        "The raw rejection JSON is not shown to the user.",
+        "The Start button returns to its default (non-loading) state after the error is caught."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Add a canister availability pre-check in the startBot and stopBot mutation flows: before invoking the mutation, call the lightweight query method (ping/getStatus) and if it fails or indicates the canister is unavailable, abort with a friendly error rather than letting the update call fail with a raw IC error.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "Canister erwl3-piaaa-aaaau-ae5la-cai is stopped",
+          "Method name: startBot"
+        ]
+      },
+      "acceptanceCriteria": [
+        "If the pre-check query fails before startBot/stopBot, the user sees a clear message that the canister is not reachable.",
+        "The mutation is not dispatched to the canister if the pre-check indicates unavailability.",
+        "Normal start/stop flow is unaffected when the canister is running."
       ]
     }
   ],
   "constraints": [
-    "Do not alter the immutable frontend hook files: useInternetIdentity.ts, useActor.ts, or main.tsx.",
-    "The new `pending` method must be a query (not an update) call for read-only order consultation.",
-    "Preserve all existing bot state, order placement, and cancellation logic in the backend actor."
+    "Do not modify frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or any files under frontend/src/components/ui.",
+    "All backend logic must remain in backend/main.mo (single-actor architecture)."
   ],
   "nonGoals": [
-    "Changing the grid order placement or cancellation logic.",
-    "Modifying the TradeHistoryPanel or ActivityLogPanel.",
-    "Adding new configuration parameters or bot control behavior."
+    "Automatically restarting or upgrading the canister from within the app.",
+    "Changes to the core grid trading logic or order placement mechanics.",
+    "Authentication flow changes."
   ],
   "imageRequirements": {
     "required": [],
