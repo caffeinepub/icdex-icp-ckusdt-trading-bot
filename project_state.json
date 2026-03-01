@@ -1,30 +1,36 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Trading bot project on Internet Computer (ICP) using ICDex exchange. Bot canister: xeccu-3iaaa-aaaai-at4kq-cai, controlled by principal 7om5v-4ertl-w75xg-of3g3-uznaj-7gsav-r2ekd-d36r4-273ar-lpm45-vqe. ~48 ckUSDT deposited to ICDex for trading. Bot is failing to create orders due to incorrect use of getOpenOrders method (should be 'pending'). User plans to also send ~$40 ICP to ICDex.",
+  "summary": "ICDex grid trading bot that places buy/sell orders using ckUSDT on the ICDex exchange. The bot loop runs correctly (fetching prices, cancelling orders) but is not placing new buy/sell orders after cancellation.",
   "architectural_notes": [
-    "Bot canister: xeccu-3iaaa-aaaai-at4kq-cai, controller principal: 7om5v-4ertl-w75xg-of3g3-uznaj-7gsav-r2ekd-d36r4-273ar-lpm45-vqe",
-    "ICDex canister: jgxow-pqaaa-aaaar-qahaq-cai — external exchange, not owned by user",
-    "~48 ckUSDT deposited to ICDex for bot trading operations",
-    "Cycles for bot computation must be sent to bot canister xeccu-3iaaa-aaaai-at4kq-cai via NNS top-up, not to ICDex canister"
+    "Bot runs a trading loop every ~10 seconds: fetches best bid/ask prices from ICDex, cancels open orders, then should place new grid orders",
+    "Bug: after 'Successfully cancelled all open orders', bot does not proceed to place buy/sell orders - loop restarts without placing orders"
   ],
   "known_issues": [
-    "Bot fails to create orders: getOpenOrders method does not exist on ICDex — must be replaced with 'pending'. Fix should be done in small incremental steps to avoid budget_exceeded errors."
+    "Bot does not place buy/sell orders after cancelling open orders - 'Placing buy/sell order' messages never appear in the activity log"
   ],
   "isFixRequest": true,
   "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "In backend/main.mo, locate only the first occurrence where getOpenOrders is called on the ICDex actor inside the tradingLoop function. Replace that single call with the correct 'pending' method. Do not change any other part of the file. Preserve all surrounding logic, variable names, and structure exactly as-is.",
+      "summary": "Investigate and fix the backend trading loop so that after successfully cancelling open orders, the bot proceeds to calculate grid levels and place new buy and sell orders on ICDex. The activity log must show 'Placing buy order' and 'Placing sell order' messages following each 'Successfully cancelled all open orders' entry.",
       "reqIds": [
         "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Add detailed activity log entries throughout the order placement phase so that each step after cancellation is traceable: e.g., 'Calculating grid levels', 'Placing buy order at price X', 'Placing sell order at price X', 'Successfully placed N buy orders and M sell orders', and any error encountered during placement.",
+      "reqIds": [
+        "REQ-2"
       ],
       "status": "pending"
     }
   ],
   "gameProjectType": "none",
-  "projectName": "ICDex Trading Bot",
+  "projectName": "ICDex Grid Trading Bot",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

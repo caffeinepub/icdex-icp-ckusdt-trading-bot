@@ -1,39 +1,55 @@
 {
   "kind": "build_request",
-  "title": "Step 1 of 3: Replace getOpenOrders with pending in tradingLoop order fetching",
+  "title": "Fix grid bot not placing buy/sell orders after cancellation",
   "projectName": "ICDex Grid Bot",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In backend/main.mo, locate only the first occurrence where getOpenOrders is called on the ICDex actor inside the tradingLoop function. Replace that single call with the correct 'pending' method. Do not change any other part of the file. Preserve all surrounding logic, variable names, and structure exactly as-is.",
+      "text": "Investigate and fix the backend trading loop so that after successfully cancelling open orders, the bot proceeds to calculate grid levels and place new buy and sell orders on ICDex. The activity log must show 'Placing buy order' and 'Placing sell order' messages following each 'Successfully cancelled all open orders' entry.",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-recent"
         ],
         "quotes": [
-          "Divida a troca do getOpenOrders por pending, em 2 ou 3 etapas... nao tente trocar todo o codigo de uma vez."
+          "após o Successfully cancelled all open orders, aparecem mensagens de Placing buy order / Placing sell order? Nao aparecem"
         ]
       },
       "acceptanceCriteria": [
-        "The first getOpenOrders call inside tradingLoop is replaced with pending",
-        "No other lines in main.mo are modified",
-        "The Motoko file compiles without errors",
-        "The rest of the bot logic (order placement, cancellation, logging) remains unchanged"
+        "After each 'Successfully cancelled all open orders' log entry, at least one 'Placing buy order' and one 'Placing sell order' message appear in the activity log.",
+        "The bot loop continues past cancellation without silently aborting or swallowing errors.",
+        "If order placement fails, an explicit error message is logged in the activity log (not silent failure).",
+        "Open orders panel reflects newly placed grid orders after each loop iteration."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Add detailed activity log entries throughout the order placement phase so that each step after cancellation is traceable: e.g., 'Calculating grid levels', 'Placing buy order at price X', 'Placing sell order at price X', 'Successfully placed N buy orders and M sell orders', and any error encountered during placement.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "após o Successfully cancelled all open orders, aparecem mensagens de Placing buy order / Placing sell order? Nao aparecem"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Activity log shows grid calculation and individual order placement steps after each cancellation.",
+        "Errors during order placement are logged with descriptive messages instead of being swallowed silently.",
+        "A summary log entry (e.g., 'Successfully placed N buy orders and M sell orders') appears at the end of each successful placement phase."
       ]
     }
   ],
   "constraints": [
-    "Only modify the single first occurrence of getOpenOrders inside tradingLoop — do not touch any other code",
-    "Do not refactor, reformat, or restructure any other part of main.mo",
-    "Do not modify any frontend files"
+    "Do not change the frontend UI layout or existing component structure.",
+    "All Motoko logic must remain in the single backend/main.mo actor file."
   ],
   "nonGoals": [
-    "Replacing all remaining getOpenOrders occurrences (reserved for steps 2 and 3)",
-    "Any frontend changes",
-    "Any other bug fixes or feature additions",
-    "Modifying the ICDex actor interface or type definitions beyond what is strictly required for this single call"
+    "Changing the grid strategy or spread/interval configuration logic.",
+    "Modifying the cancellation logic — it is confirmed to be working correctly.",
+    "Adding new frontend panels or UI features."
   ],
   "imageRequirements": {
     "required": [],

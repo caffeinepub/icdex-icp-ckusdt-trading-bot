@@ -1,18 +1,25 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T03:49:27.084Z",
+  "generatedAt": "2026-03-01T04:04:09.547Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
+    "total": 2,
     "implemented": 0,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In backend/main.mo, locate only the first occurrence where getOpenOrders is called on the ICDex actor inside the tradingLoop function. Replace that single call with the correct 'pending' method. Do not change any other part of the file. Preserve all surrounding logic, variable names, and structure exactly as-is.",
+        "summary": "Investigate and fix the backend trading loop so that after successfully cancelling open orders, the bot proceeds to calculate grid levels and place new buy and sell orders on ICDex. The activity log must show 'Placing buy order' and 'Placing sell order' messages following each 'Successfully cancelled all open orders' entry.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Add detailed activity log entries throughout the order placement phase so that each step after cancellation is traceable: e.g., 'Calculating grid levels', 'Placing buy order at price X', 'Placing sell order at price X', 'Successfully placed N buy orders and M sell orders', and any error encountered during placement.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []

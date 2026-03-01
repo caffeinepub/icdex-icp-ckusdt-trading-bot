@@ -1,6 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Step 1 of 3: Replace getOpenOrders with pending in tradingLoop order fetching",
+  "title": "Fix grid bot not placing buy/sell orders after cancellation",
   "requirements": []
 }

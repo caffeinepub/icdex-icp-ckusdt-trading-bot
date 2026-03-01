@@ -200,8 +200,19 @@ actor {
       };
       case (#ok(_)) {
         addLogEntry("cancel_orders_success", "Successfully cancelled all open orders");
+        let result = await continueTradingLoopAfterCancellation();
+        switch (result) {
+          case (#ok(_)) {};
+          case (#err(e)) {
+            addLogEntry("trading_loop_error", "Error after cancellation: " # e);
+          };
+        };
       };
     };
+  };
+
+  func continueTradingLoopAfterCancellation() : async { #ok; #err : Text } {
+    addLogEntry("continue_trading", "Continuing trading loop after all orders cancelled");
 
     let level10 = await icDex.getLevel10();
     addLogEntry("fetched_level10", "Successfully fetched level10 data");
@@ -252,6 +263,7 @@ actor {
         addLogEntry("place_order_error", "Error placing orders: " # e);
       };
     };
+    #ok;
   };
 
   func placeOrders(grid : [(Side, Nat)], price : Nat) : async { #ok; #err : Text } {
@@ -370,4 +382,3 @@ actor {
     openOrderMap.values().toVarArray<OrderEntry>().toArray();
   };
 };
-
