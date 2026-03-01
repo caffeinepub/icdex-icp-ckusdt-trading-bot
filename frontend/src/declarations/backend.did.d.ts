@@ -31,7 +31,7 @@ export type Side = { 'buy' : null } |
   { 'sell' : null };
 export type Time = bigint;
 export interface _SERVICE {
-  'cancelAllOpenOrders' : ActorMethod<[], undefined>,
+  'cancelAllOpenOrders' : ActorMethod<[], { 'ok' : null } | { 'err' : string }>,
   'cancelOneOrderTest' : ActorMethod<[], undefined>,
   'getActivityLog' : ActorMethod<[bigint, bigint], Array<LogEntry>>,
   'getBotStatus' : ActorMethod<[], boolean>,

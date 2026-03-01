@@ -32,7 +32,13 @@ export enum Side {
     sell = "sell"
 }
 export interface backendInterface {
-    cancelAllOpenOrders(): Promise<void>;
+    cancelAllOpenOrders(): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     cancelOneOrderTest(): Promise<void>;
     getActivityLog(count: bigint, page: bigint): Promise<Array<LogEntry>>;
     getBotStatus(): Promise<boolean>;

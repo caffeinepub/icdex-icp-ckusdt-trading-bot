@@ -1,93 +1,41 @@
 {
   "kind": "build_request",
-  "title": "Fix Grid Levels, Open Orders, and Trade History showing empty data",
-  "projectName": "ICDex Trading Bot",
-  "priority": "high",
+  "title": "Add detailed step-by-step logging to tradingLoop()",
+  "projectName": "ICDex Grid Bot",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Investigate and fix the Grid Preview Table (grid levels) panel so that it correctly fetches and displays current grid price levels from the backend canister. Ensure loading, error, and empty states are handled distinctly — empty state should only appear if the backend genuinely returns zero grid levels, not due to a fetch failure or uninitialized actor.",
-      "target": "both",
+      "text": "In the backend tradingLoop() function, add detailed activity log entries at every key step: (1) before fetching the current market price, (2) after successfully fetching the price, (3) before placing each individual buy/sell order, (4) after each order placement attempt (logging success with order ID or failure with error message), (5) when catching any exception or error during the loop. Each log entry must include a descriptive message so the frontend Activity Log panel can display exactly where the loop is succeeding or failing.",
+      "target": "backend",
       "source": {
         "messageIds": [
           "msg-latest"
         ],
         "quotes": [
-          "Grid level. Esses aparecem vazios."
+          "Opção A — Adicionar log detalhado no loop",
+          "Adicionamos mensagens de log em cada passo do tradingLoop(): antes de buscar preço, antes de criar ordem, ao receber erro."
         ]
       },
       "acceptanceCriteria": [
-        "Grid levels panel shows real buy/sell price levels when the bot has an active grid configured",
-        "A loading skeleton is shown while data is being fetched",
-        "An error message is displayed if the fetch fails, rather than an empty list",
-        "Backend query for grid levels returns structured data including price levels, not an empty array, when grid is active"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Investigate and fix the Open Orders panel so that it correctly fetches and displays open orders from the backend canister. Ensure the panel distinguishes between a genuine empty order book and a failed/unresolved query — errors must surface visibly rather than silently rendering an empty list.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-latest"
-        ],
-        "quotes": [
-          "Open orders. Esses aparecem vazios."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Open orders panel shows all currently placed buy and sell orders when orders exist on the canister",
-        "A loading skeleton is shown while data is being fetched",
-        "An error message is displayed if the fetch fails, rather than an empty list",
-        "Backend query for open orders returns the correct list of active orders"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Investigate and fix the Trade History panel so that it correctly fetches and displays past trades from the backend canister. Ensure the panel distinguishes between a genuine empty history and a failed/unresolved query — errors must surface visibly rather than silently rendering an empty list.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-latest"
-        ],
-        "quotes": [
-          "Trade History. Esses aparecem vazios."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Trade history panel shows past trades (filled, cancelled, open) in reverse-chronological order when history exists",
-        "A loading skeleton is shown while data is being fetched",
-        "An error message is displayed if the fetch fails, rather than an empty list",
-        "Backend query for trade history returns actual trade records, not an empty array, when trades have occurred"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Audit the useQueries.ts hooks for grid levels, open orders, and trade history to ensure: (1) the actor is fully initialized before queries fire, (2) canister health-check guards are not incorrectly blocking these queries, (3) polling intervals are active, and (4) fetch errors are propagated to the UI rather than swallowed.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-latest"
-        ],
-        "quotes": [
-          "Grid level. Open orders. Trade History. Esses aparecem vazios."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Queries for grid levels, open orders, and trade history are not gated behind conditions that permanently prevent them from running",
-        "Errors from these queries are reflected in the isError state and surfaced to the corresponding panel components",
-        "Polling is active for all three queries while the dashboard is open"
+        "After starting the bot, the Activity Log panel shows a log entry for the price fetch attempt.",
+        "After a successful price fetch, a log entry shows the fetched price value.",
+        "Before each order is placed, a log entry is written indicating the side (buy/sell) and price level.",
+        "After each order placement, a log entry indicates success (with order ID) or failure (with error reason).",
+        "Any exception thrown inside tradingLoop() is caught and logged with an error message.",
+        "No silent failures: every code path in tradingLoop() produces at least one log entry."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
-    "Preserve all existing backend state and data structures; do not alter storage variables or break existing functionality"
+    "Do not change the bot logic, grid calculation, or order placement strategy — only add logging.",
+    "Do not modify any frontend files.",
+    "Keep all changes inside backend/main.mo."
   ],
   "nonGoals": [
-    "Redesigning the visual layout or theme of any panel",
-    "Adding new trading features or bot configuration options",
-    "Modifying the Market Data LIVE panel (already fixed in Version 34)"
+    "Fixing the underlying order placement issue (that comes after identifying the cause via logs).",
+    "Rewriting or refactoring the bot architecture.",
+    "Adding new frontend UI components or panels."
   ],
   "imageRequirements": {
     "required": [],

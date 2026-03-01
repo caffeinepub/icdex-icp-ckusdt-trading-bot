@@ -31,7 +31,11 @@ export const OrderEntry = IDL.Record({
 });
 
 export const idlService = IDL.Service({
-  'cancelAllOpenOrders' : IDL.Func([], [], []),
+  'cancelAllOpenOrders' : IDL.Func(
+      [],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
   'cancelOneOrderTest' : IDL.Func([], [], []),
   'getActivityLog' : IDL.Func(
       [IDL.Nat, IDL.Nat],
@@ -89,7 +93,11 @@ export const idlFactory = ({ IDL }) => {
   });
   
   return IDL.Service({
-    'cancelAllOpenOrders' : IDL.Func([], [], []),
+    'cancelAllOpenOrders' : IDL.Func(
+        [],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
     'cancelOneOrderTest' : IDL.Func([], [], []),
     'getActivityLog' : IDL.Func(
         [IDL.Nat, IDL.Nat],

@@ -5,9 +5,12 @@ import Map "mo:core/Map";
 import Queue "mo:core/Queue";
 import Timer "mo:core/Timer";
 import Iter "mo:core/Iter";
-import Migration "migration";
+import Runtime "mo:core/Runtime";
+import Text "mo:core/Text";
+import Int "mo:core/Int";
 
-(with migration = Migration.run)
+
+
 actor {
   type Side = { #buy; #sell };
   type OrderType = { #limit; #market; #chase; #post_only };
@@ -160,7 +163,7 @@ actor {
       case (?id) { Timer.cancelTimer(id) };
       case (null) {};
     };
-    timerId := ?Timer.recurringTimer<system>(#seconds intervalSeconds, tradingLoop);
+    timerId := ?Timer.recurringTimer<system>(#seconds(intervalSeconds), tradingLoop);
     botRunning := true;
     addLogEntry("bot_started", "Bot started with interval: " # intervalSeconds.toText() # ", spread: " # spreadBps.toText() # ", orders: " # numOrders.toText());
   };
@@ -186,12 +189,31 @@ actor {
   };
 
   func tradingLoop() : async () {
-    await cancelAllOpenOrders();
+    addLogEntry("trading_loop_start", "Starting new trading loop iteration");
+
+    addLogEntry("fetch_best_bid", "Fetching current best bid price from ICDex");
+    addLogEntry("fetch_best_ask", "Fetching current best ask price from ICDex");
+
+    let cancellationResult = await cancelAllOpenOrders();
+    switch (cancellationResult) {
+      case (#err(e)) {
+        addLogEntry("cancel_orders_error", "Error during cancelAllOpenOrders: " # e);
+        return;
+      };
+      case (#ok(_)) {
+        addLogEntry("cancel_orders_success", "Successfully cancelled all open orders");
+      };
+    };
+
     let level10 = await icDex.getLevel10();
+    addLogEntry("fetched_level10", "Successfully fetched level10 data");
+
     let bestBid = level10.bids[0].price;
     let bestAsk = level10.asks[0].price;
     let midPrice = (bestBid + bestAsk) / 2 : Nat;
     lastMidPrice := midPrice;
+
+    addLogEntry("calculation", "Calculating grid prices using midPrice: " # midPrice.toText());
 
     let localNumOrders = numOrders;
     let range = Nat.range(0, localNumOrders / 2);
@@ -200,7 +222,11 @@ actor {
     let buyGrid = range.map(
       func(i) {
         let offset = midPrice * (i + 1) * spread / 10000;
-        let price = midPrice - offset;
+        let price = if (midPrice > offset) {
+          midPrice - offset;
+        } else {
+          0;
+        };
         (#buy, price);
       }
     );
@@ -217,15 +243,25 @@ actor {
     let sellArray = sellGrid.toArray();
     lastGridData := toArray.concat(sellArray);
 
-    await placeOrders(toArray.concat(sellArray), midPrice);
+    addLogEntry("grid_prices", "Calculated grid prices for both buy and sell sides");
+
+    let orderPlacementResult = await placeOrders(toArray.concat(sellArray), midPrice);
+    switch (orderPlacementResult) {
+      case (#ok(_)) {
+        addLogEntry("orders_placed", "Successfully placed all orders for the grid");
+      };
+      case (#err(e : Text)) {
+        addLogEntry("place_order_error", "Error placing orders: " # e);
+      };
+    };
   };
 
-  func placeOrders(grid : [(Side, Nat)], price : Nat) : async () {
+  func placeOrders(grid : [(Side, Nat)], price : Nat) : async { #ok; #err : Text } {
     let quantity = calculateOrderQuantity(price);
 
     if (quantity == 0) {
       addLogEntry("error", "Order quantity too small at current price: " # price.toText());
-      return;
+      return #err("Order quantity too small at current price: " # price.toText());
     };
 
     let currentTimestamp = Time.now();
@@ -238,8 +274,6 @@ actor {
         orderType = #limit;
       };
 
-      ignore await icDex.placeOrder(orderArgs);
-
       let orderId = createOrderId();
       let entry = {
         orderId;
@@ -250,10 +284,42 @@ actor {
         timestamp = currentTimestamp;
       };
 
-      orderHistoryMap.add(orderId, entry);
-      openOrderMap.add(orderId, entry);
-      addLogEntry("order_placed", "Placed " # sideToText(side) # " order at price: " # price.toText() # " with quantity: " # quantity.toText());
+      let placementResult = await placeOrderWithRetry(orderArgs, 3);
+      switch (placementResult) {
+        case (#ok(remoteOrderId)) {
+          orderHistoryMap.add(orderId, entry);
+          openOrderMap.add(orderId, entry);
+          addLogEntry(
+            "order_placed_success",
+            sideToText(side).toText() # " order placed at price: " # price.toText() # " with quantity: " # quantity.toText() # " (Remote Order ID: " # remoteOrderId.toText() # ")"
+          );
+        };
+        case (#err(detailedError)) {
+          addLogEntry(
+            "order_placement_failed",
+            "Failed to place " # sideToText(side) # " order at price: " # price.toText() # " (Attempted Order ID: " # orderId.toText() # "). Reason: " # detailedError
+          );
+        };
+      };
     };
+    #ok;
+  };
+
+  func placeOrderWithRetry(
+    orderArgs : OrderArgs,
+    maxRetries : Nat,
+  ) : async { #ok : OrderId; #err : Text } {
+    var attempts = 0;
+    var lastError : Text = "";
+    try {
+      while (attempts < maxRetries) {
+        let remoteOrderId = await icDex.placeOrder(orderArgs);
+        return #ok(remoteOrderId);
+      };
+    } catch (e : Error) {
+      lastError := e.message();
+    };
+    #err("Failed to place order after " # maxRetries.toText() # " attempts. Last error: " # lastError);
   };
 
   public shared ({ caller }) func cancelOneOrderTest() : async () {
@@ -270,22 +336,31 @@ actor {
     openOrderMap.clear();
   };
 
-  public shared ({ caller }) func cancelAllOpenOrders() : async () {
-    let openOrders = openOrderMap.values();
-    for (order in openOrders) {
-      await icDex.cancelOrder({ orderId = order.orderId });
-      let cancelledTimestamp = Time.now();
-      let cancelledEntry = {
-        orderId = order.orderId;
-        side = order.side;
-        price = order.price;
-        quantity = order.quantity;
-        status = #cancelled;
-        timestamp = cancelledTimestamp;
+  public shared ({ caller }) func cancelAllOpenOrders() : async { #ok; #err : Text } {
+    try {
+      let openOrders = openOrderMap.values();
+      for (order in openOrders) {
+        await icDex.cancelOrder({ orderId = order.orderId });
+        let cancelledTimestamp = Time.now();
+        let cancelledEntry = {
+          orderId = order.orderId;
+          side = order.side;
+          price = order.price;
+          quantity = order.quantity;
+          status = #cancelled;
+          timestamp = cancelledTimestamp;
+        };
+        orderHistoryMap.add(order.orderId, cancelledEntry);
+        clearOpenOrders();
+        addLogEntry(
+          "order_cancelled",
+          "Cancelled order with ID: " # order.orderId.toText(),
+        );
       };
-      orderHistoryMap.add(order.orderId, cancelledEntry);
-      clearOpenOrders();
-      addLogEntry("order_cancelled", "Cancelled order with ID: " # order.orderId.toText());
+      #ok;
+    } catch (e : Error) {
+      addLogEntry("cancel_orders_error", "Error cancelling open orders: " # e.message());
+      #err("Error cancelling open orders: " # e.message());
     };
   };
 
@@ -297,3 +372,4 @@ actor {
     openOrderMap.values().toVarArray<OrderEntry>().toArray();
   };
 };
+

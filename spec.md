@@ -1,13 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the Grid Levels, Open Orders, and Trade History panels in the ICDex Trading Bot dashboard so they correctly fetch and display data from the backend canister instead of appearing empty.
+**Goal:** Add detailed step-by-step logging throughout the `tradingLoop()` function in the backend so the Activity Log panel can display exactly where the loop is succeeding or failing.
 
 **Planned changes:**
-- Audit and fix `useQueries.ts` hooks for grid levels, open orders, and trade history to ensure the actor is initialized before queries fire, errors are propagated (not swallowed), and polling intervals are active
-- Fix the Grid Levels panel to fetch and display real buy/sell price levels, with distinct loading, error, and empty states
-- Fix the Open Orders panel to fetch and display active orders, with distinct loading, error, and empty states
-- Fix the Trade History panel to fetch and display past trades in reverse-chronological order, with distinct loading, error, and empty states
-- Ensure backend queries for all three panels return correct structured data when records exist
+- Add a log entry before fetching the current market price
+- Add a log entry after successfully fetching the price, including the fetched price value
+- Add a log entry before each individual buy/sell order placement, indicating the side and price level
+- Add a log entry after each order placement attempt, logging success with the order ID or failure with the error reason
+- Add a log entry when any exception or error is caught inside `tradingLoop()`
+- Ensure every code path in `tradingLoop()` produces at least one log entry (no silent failures)
 
-**User-visible outcome:** The Grid Levels, Open Orders, and Trade History panels display real data when available, show loading skeletons while fetching, and surface error messages on failure instead of silently rendering empty lists.
+**User-visible outcome:** After starting the bot, the Activity Log panel will show granular log entries for each step of the trading loop, making it possible to identify exactly where the loop succeeds or fails.
