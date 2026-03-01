@@ -1,26 +1,26 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Implement real buy/sell order placement and cancellation via ICDex in the grid trading loop",
+  "title": "Fix order cancellation and repositioning logic - Frontend",
   "requirements": [
     {
       "id": "REQ-3",
-      "summary": "Update frontend useQueries.ts hook to call the backend pending method for fetching open orders, ensuring OpenOrdersPanel displays live bot orders correctly",
+      "summary": "Update OpenOrdersPanel and cancel-all mutation to automatically refresh the open orders list after cancellation completes",
       "acceptanceCriteria": [
-        "The React Query hook for open orders calls the `pending` backend method.",
-        "The OpenOrdersPanel renders the returned open orders without errors.",
-        "Loading, error, and empty states are handled correctly."
+        "After clicking cancel-all in OpenOrdersPanel, the open orders list refetches automatically.",
+        "The panel shows an empty state or updated orders list once cancellation is confirmed by the backend.",
+        "No stale orders remain visible in the UI after successful cancellation."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Update the useOpenOrders React Query hook to call the backend `pending` method instead of any previous incorrect query. Ensure the hook returns the array of OrderEntry records with proper loading, error, and refetch capabilities. The query should use 'openOrders' as the query key and refetch on window focus to keep the open orders list current."
+          "description": "Modify the useCancelAllOrders mutation to invalidate the 'openOrders' query key in its onSuccess callback, ensuring the open orders list refetches immediately after a successful cancel-all operation completes."
         },
         {
           "path": "frontend/src/components/OpenOrdersPanel.tsx",
           "operation": "modify",
-          "description": "Verify that the OpenOrdersPanel component correctly consumes the updated useOpenOrders hook and renders the list of pending bot orders. Ensure loading skeletons display during fetch, error states show appropriate messages, and empty states indicate no open orders. The panel should display order details including side, price, quantity, and timestamp in a user-friendly format."
+          "description": "Update the OpenOrdersPanel component to handle the loading state during mutation and show appropriate feedback (loading indicator, success message, or error state) while the cancel-all operation is in progress and the orders list is refetching."
         }
       ]
     }

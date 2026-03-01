@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-frontend-usequeries-ts-hook-to-call-the-backend-pending-method-for-fetching-open-orders-replacing-any-previous-incorrect-query-ensure-the-openorderspanel-continues-to-display-the-live-list-of-open-bot-orders-correctly",
-      "featureTitle": "Update the frontend `useQueries.ts` hook to call the backend `pending` method for fetching open orders, replacing any previous incorrect query. Ensure the OpenOrdersPanel continues to display the live list of open bot orders correctly.",
+      "featureId": "feature-update-the-openorderspanel-and-the-cancel-all-mutation-in-usequeries-ts-so-that-after-a-cancel-all-action-completes-the-open-orders-list-is-immediately-refreshed-and-the-ui-reflects-the-updated-empty-or-repositioned-order-state",
+      "featureTitle": "Update the OpenOrdersPanel and the cancel-all mutation in useQueries.ts so that after a cancel-all action completes, the open orders list is immediately refreshed and the UI reflects the updated (empty or repositioned) order state.",
       "files": [
         "frontend/src/components/OpenOrdersPanel.tsx",
         "frontend/src/hooks/useQueries.ts"

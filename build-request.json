@@ -1,78 +1,74 @@
 {
   "kind": "build_request",
-  "title": "Implement real buy/sell order placement and cancellation via ICDex in the grid trading loop",
+  "title": "Fix order cancellation and repositioning logic",
   "projectName": "ICDex Grid Bot",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In the backend actor (backend/main.mo), implement the core grid trading loop that places real buy and sell orders via ICDex. For each cycle: (1) query current mid-price from ICDex, (2) calculate grid levels based on configured spread, numOrders, and orderSize, (3) cancel any existing open bot orders that are no longer aligned with the new grid (using the ICDex cancel endpoint), (4) place new buy orders below mid-price and sell orders above mid-price using the ICDex trade/order placement endpoint, (5) store placed order IDs in the open orders map, and (6) log each placed and cancelled order to the activity log. The loop must be driven by the existing recurring timer.",
+      "text": "Fix the backend order cancellation logic so that when the bot refreshes or stops, all previously placed grid orders are correctly identified and cancelled on ICDex before new orders are placed or the bot halts.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-recent"
+          "msg-1"
         ],
         "quotes": [
-          "colocar ordens reais de compra/venda via ICDex",
-          "Loop de trading grid — colocar ordens reais de compra/venda via ICDex com cancelamento e reposicionamento correto"
+          "cancelamento e reposicionamento correto das ordens."
         ]
       },
       "acceptanceCriteria": [
-        "The timer-based bot loop calls the ICDex order placement API to place real buy and sell limit orders at each grid level.",
-        "Orders that deviate from the current grid are cancelled via ICDex cancel API before new orders are placed.",
-        "Placed order IDs are persisted in the open orders stable map.",
-        "Each order placement and cancellation is recorded as a LogEntry in the activity log.",
-        "The number of open orders does not exceed maxOpenOrders config.",
-        "The loop only runs when the bot is enabled."
+        "When the bot stops, all open orders placed by the bot are cancelled on ICDex and none remain open.",
+        "When the bot refreshes its grid, existing orders from the previous cycle are cancelled before new orders are placed.",
+        "Cancellation failures are logged to the activity log with sufficient detail.",
+        "No duplicate or orphaned orders remain after a cancel-and-reposition cycle."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In the backend actor (backend/main.mo), implement a `pending` query method that returns all currently open orders tracked by the bot by reading from the open orders map. Replace any existing incorrect calls to retrieve open orders with this method.",
+      "text": "Fix the backend order repositioning logic so that after cancellation, the bot correctly recalculates grid price levels and places new buy/sell orders at the updated positions based on the current market price and configured spread/grid parameters.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-recent"
+          "msg-1"
         ],
         "quotes": [
-          "Método `pending` — consultar ordens abertas do bot (substituindo qualquer chamada incorreta)"
+          "cancelamento e reposicionamento correto das ordens."
         ]
       },
       "acceptanceCriteria": [
-        "A `pending` query function exists in the backend actor.",
-        "It returns a list/array of open order records from the internal open orders map.",
-        "Any prior incorrect open-order query calls elsewhere in the actor are replaced with the correct map lookup."
+        "After cancellation, the bot places the correct number of buy and sell orders as configured (numOrders).",
+        "New orders are placed at price levels derived from the current mid price and the configured spread.",
+        "The activity log records each repositioning cycle with the number of orders cancelled and placed.",
+        "If order placement fails for any grid level, the error is logged and the bot continues placing remaining orders."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Update the frontend `useQueries.ts` hook to call the backend `pending` method for fetching open orders, replacing any previous incorrect query. Ensure the OpenOrdersPanel continues to display the live list of open bot orders correctly.",
+      "text": "Update the OpenOrdersPanel and the cancel-all mutation in useQueries.ts so that after a cancel-all action completes, the open orders list is immediately refreshed and the UI reflects the updated (empty or repositioned) order state.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-recent"
+          "msg-1"
         ],
         "quotes": [
-          "Método `pending` — consultar ordens abertas do bot"
+          "cancelamento e reposicionamento correto das ordens."
         ]
       },
       "acceptanceCriteria": [
-        "The React Query hook for open orders calls the `pending` backend method.",
-        "The OpenOrdersPanel renders the returned open orders without errors.",
-        "Loading, error, and empty states are handled correctly."
+        "After clicking cancel-all in OpenOrdersPanel, the open orders list refetches automatically.",
+        "The panel shows an empty state or updated orders list once cancellation is confirmed by the backend.",
+        "No stale orders remain visible in the UI after successful cancellation."
       ]
     }
   ],
   "constraints": [
-    "All Motoko logic must remain in the single actor in backend/main.mo.",
-    "Do not modify files under frontend/src/hooks/useActor.ts, frontend/src/hooks/useInternetIdentity.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
-    "ICDex integration must use the existing ICDex canister interface already referenced in the project; do not introduce new external dependencies."
+    "All Motoko logic must remain in backend/main.mo as a single actor.",
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui."
   ],
   "nonGoals": [
-    "Order history / latestFilled display in the dashboard (separate task).",
-    "Manual order placement and cancellation buttons in the dashboard (separate task).",
-    "Balance verification before each bot cycle (separate task).",
-    "Estimated PnL calculation (separate task)."
+    "Adding new grid configuration parameters beyond existing spread/numOrders/interval.",
+    "Implementing PnL tracking or balance verification.",
+    "Changing the visual theme or layout of the dashboard."
   ],
   "imageRequirements": {
     "required": [],

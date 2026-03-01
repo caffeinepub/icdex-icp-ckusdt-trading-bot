@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T18:34:22.334Z",
+  "generatedAt": "2026-02-28T22:03:27.640Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,21 +12,21 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In the backend actor (backend/main.mo), implement the core grid trading loop that places real buy and sell orders via ICDex. For each cycle: (1) query current mid-price from ICDex, (2) calculate grid levels based on configured spread, numOrders, and orderSize, (3) cancel any existing open bot orders that are no longer aligned with the new grid (using the ICDex cancel endpoint), (4) place new buy orders below mid-price and sell orders above mid-price using the ICDex trade/order placement endpoint, (5) store placed order IDs in the open orders map, and (6) log each placed and cancelled order to the activity log. The loop must be driven by the existing recurring timer.",
+        "summary": "Fix the backend order cancellation logic so that when the bot refreshes or stops, all previously placed grid orders are correctly identified and cancelled on ICDex before new orders are placed or the bot halts.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "In the backend actor (backend/main.mo), implement a `pending` query method that returns all currently open orders tracked by the bot by reading from the open orders map. Replace any existing incorrect calls to retrieve open orders with this method.",
+        "summary": "Fix the backend order repositioning logic so that after cancellation, the bot correctly recalculates grid price levels and places new buy/sell orders at the updated positions based on the current market price and configured spread/grid parameters.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Update the frontend `useQueries.ts` hook to call the backend `pending` method for fetching open orders, replacing any previous incorrect query. Ensure the OpenOrdersPanel continues to display the live list of open bot orders correctly.",
+        "summary": "Update the OpenOrdersPanel and the cancel-all mutation in useQueries.ts so that after a cancel-all action completes, the open orders list is immediately refreshed and the UI reflects the updated (empty or repositioned) order state.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/hooks/useQueries.ts",
@@ -45,10 +45,6 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/BotControlPanel.tsx",
-    "frontend/src/components/ConfigurationPanel.tsx",
-    "frontend/src/components/GridPreviewTable.tsx",
-    "frontend/src/components/MarketDataPanel.tsx",
     "frontend/src/components/OpenOrdersPanel.tsx",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json",

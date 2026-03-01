@@ -1,43 +1,31 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T18:34:22.332Z",
-  "summary": "The diff implements a grid trading bot with ICDex integration across backend/main.mo and frontend hooks/components. REQ-2 and REQ-3 are clearly implemented. REQ-1 has a partial implementation visible in the truncated backend, but several key acceptance criteria cannot be fully verified from the truncated diff.",
+  "generatedAt": "2026-02-28T22:03:27.637Z",
+  "summary": "The diff modifies backend/main.mo, OpenOrdersPanel.tsx, useQueries.ts, and supporting files. REQ-3 frontend changes are clearly present. However, backend/main.mo is truncated, making full verification of REQ-1 and REQ-2 acceptance criteria impossible from the available evidence.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "The timer-based bot loop must cancel existing open bot orders that deviate from the new grid via ICDex cancel API before placing new orders, and must enforce a maxOpenOrders limit.",
-      "reason": "The backend/main.mo diff is truncated before the bot loop body is shown. While ICDex interface types (placeOrder, cancelOrder, getLevel10, ticker) and openOrderMap are defined, the actual timer callback implementation that performs grid alignment checks, cancels misaligned orders, enforces maxOpenOrders, and places new orders is cut off. The acceptance criteria for 'orders that deviate from the current grid are cancelled via ICDex cancel API' and 'number of open orders does not exceed maxOpenOrders config' cannot be confirmed.",
+      "requirement": "Fix the backend order cancellation logic so that all previously placed grid orders are correctly identified and cancelled on ICDex before new orders are placed or the bot halts; cancellation failures are logged; no duplicate or orphaned orders remain.",
+      "reason": "The backend/main.mo diff is truncated before the cancellation logic (cancelAllOpenOrders, stopBot, grid refresh cycle) is visible. The actual cancellation-before-reposition loop, error logging on cancellation failure, and orphan-prevention logic cannot be confirmed from the visible portion.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Fix the backend order repositioning logic so that after cancellation, the bot recalculates grid price levels and places new buy/sell orders at updated positions; activity log records each repositioning cycle with orders cancelled and placed; per-level errors are logged and bot continues.",
+      "reason": "The backend/main.mo diff is truncated before the recurringTimer/grid placement logic is visible. The recalculation of grid levels from mid price and spread, per-level error logging with continuation, and activity log entries for repositioning cycles cannot be confirmed from the visible portion.",
       "evidence": [
         "backend/main.mo"
       ]
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "cancelAllOpenOrders method exposed and wired to a Cancel All button in OpenOrdersPanel",
-      "reason": "The build request explicitly lists manual order placement and cancellation buttons in the dashboard as a non-goal (separate task). The diff adds a useCancelAllOrders hook calling cancelAllOpenOrders() and a Cancel All button in OpenOrdersPanel.",
-      "evidence": [
-        "frontend/src/components/OpenOrdersPanel.tsx",
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    },
-    {
-      "description": "cancelOneOrderTest method exposed in the TradingBotActor TypeScript interface",
-      "reason": "No requirement mentions a cancelOneOrderTest method. It appears in the TradingBotActor TypeScript interface in useQueries.ts but was never requested.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    }
-  ],
-  "confidence": 0.72,
+  "hallucinated_features": [],
+  "confidence": 0.45,
   "changed_files": [
     "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/BotControlPanel.tsx",
-    "frontend/src/components/ConfigurationPanel.tsx",
-    "frontend/src/components/GridPreviewTable.tsx",
-    "frontend/src/components/MarketDataPanel.tsx",
     "frontend/src/components/OpenOrdersPanel.tsx",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json"

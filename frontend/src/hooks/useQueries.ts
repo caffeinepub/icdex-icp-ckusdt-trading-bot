@@ -91,8 +91,11 @@ export function useStopBot() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['botStatus'] });
-            queryClient.invalidateQueries({ queryKey: ['openOrders'] });
             queryClient.invalidateQueries({ queryKey: ['activityLog'] });
+            // Force immediate refetch of open orders and trade history after stop
+            queryClient.refetchQueries({ queryKey: ['openOrders'] });
+            queryClient.refetchQueries({ queryKey: ['tradeHistory'] });
+            queryClient.refetchQueries({ queryKey: ['lastGrid'] });
         },
     });
 }
@@ -109,9 +112,14 @@ export function useCancelAllOrders() {
             return tradingActor.cancelAllOpenOrders();
         },
         onSuccess: () => {
+            // Invalidate stale data and immediately refetch to reflect cleared orders
             queryClient.invalidateQueries({ queryKey: ['openOrders'] });
             queryClient.invalidateQueries({ queryKey: ['tradeHistory'] });
             queryClient.invalidateQueries({ queryKey: ['activityLog'] });
+            // Force immediate refetch so UI clears without waiting for next poll
+            queryClient.refetchQueries({ queryKey: ['openOrders'] });
+            queryClient.refetchQueries({ queryKey: ['tradeHistory'] });
+            queryClient.refetchQueries({ queryKey: ['activityLog'] });
         },
     });
 }

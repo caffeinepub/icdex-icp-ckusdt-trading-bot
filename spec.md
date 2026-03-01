@@ -1,12 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Implement real buy/sell order placement and cancellation via ICDex in the grid trading bot loop, and expose a `pending` query method for retrieving open orders.
+**Goal:** Fix the order cancellation and repositioning logic in the ICDex Grid Bot so that orders are correctly cancelled and re-placed during bot refresh/stop cycles, and the UI reflects the updated state immediately.
 
 **Planned changes:**
-- In `backend/main.mo`, implement the core grid trading loop driven by the existing recurring timer: query mid-price from ICDex, calculate grid levels, cancel misaligned open orders via ICDex cancel API, place new buy/sell limit orders via ICDex order placement API, persist order IDs in the open orders stable map, and log each action to the activity log.
-- Enforce `maxOpenOrders` limit and ensure the loop only runs when the bot is enabled.
-- Add a `pending` query method in `backend/main.mo` that returns all currently open orders from the internal open orders map, replacing any prior incorrect open-order query calls.
-- Update `frontend/src/hooks/useQueries.ts` to call the backend `pending` method for fetching open orders, ensuring `OpenOrdersPanel` displays live open orders correctly with proper loading, error, and empty states.
+- Fix backend cancellation logic so all open bot orders are identified and cancelled on ICDex before new orders are placed or the bot halts
+- Log cancellation failures with sufficient detail to the activity log
+- Fix backend repositioning logic to recalculate grid price levels after cancellation and place the correct number of buy/sell orders based on current market price and configured spread/grid parameters
+- Log each repositioning cycle (orders cancelled and placed) to the activity log; continue placing remaining orders if any single placement fails
+- Update `OpenOrdersPanel` and the cancel-all mutation in `useQueries.ts` so the open orders list automatically refetches after a cancel-all action, showing the updated (empty or repositioned) state
 
-**User-visible outcome:** The grid bot places and cancels real limit orders on ICDex each cycle, and the OpenOrdersPanel in the dashboard accurately reflects the current live open orders tracked by the bot.
+**User-visible outcome:** When the bot stops or refreshes its grid, all previous orders are properly cancelled and new orders are placed at correct price levels. Clicking "cancel all" in the UI immediately reflects the cleared or updated order list with no stale entries.

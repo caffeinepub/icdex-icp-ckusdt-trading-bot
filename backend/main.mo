@@ -1,10 +1,10 @@
 import Array "mo:core/Array";
 import Time "mo:core/Time";
 import Nat "mo:core/Nat";
-import Queue "mo:core/Queue";
-import Timer "mo:core/Timer";
 import Map "mo:core/Map";
+import Queue "mo:core/Queue";
 import Iter "mo:core/Iter";
+import Timer "mo:core/Timer";
 
 actor {
   // ICDex Types (no HTTP outcalls yet)
@@ -267,6 +267,10 @@ actor {
     openOrderMap.values().toArray();
   };
 
+  func clearOpenOrders() {
+    openOrderMap.clear();
+  };
+
   public shared ({ caller }) func cancelAllOpenOrders() : async () {
     let openOrders = openOrderMap.values();
     for (order in openOrders) {
@@ -281,7 +285,7 @@ actor {
         timestamp = cancelledTimestamp;
       };
       orderHistoryMap.add(order.orderId, cancelledEntry);
-      openOrderMap.remove(order.orderId);
+      clearOpenOrders();
       addLogEntry("order_cancelled", "Cancelled order with ID: " # order.orderId.toText());
     };
   };

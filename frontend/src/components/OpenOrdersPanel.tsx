@@ -1,4 +1,4 @@
-import { ListOrdered, RefreshCw, Inbox, AlertCircle, XCircle, Loader2 } from 'lucide-react';
+import { ListOrdered, RefreshCw, Inbox, AlertCircle, XCircle, Loader2, CheckCircle2 } from 'lucide-react';
 import { useOpenOrders, useCancelAllOrders } from '@/hooks/useQueries';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,10 +36,10 @@ function formatTimestamp(ns: bigint): string {
     return new Date(ms).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
 }
 
-function OrderRow({ entry, index }: { entry: OrderEntry; index: number }) {
+function OrderRow({ entry, index, dimmed }: { entry: OrderEntry; index: number; dimmed?: boolean }) {
     const isBuy = entry.side === Side.buy;
     return (
-        <div className="grid grid-cols-[2.5rem_3rem_1fr_1fr_3.5rem] gap-2 px-3 py-2 border-b border-border/40 hover:bg-muted/20 transition-colors">
+        <div className={`grid grid-cols-[2.5rem_3rem_1fr_1fr_3.5rem] gap-2 px-3 py-2 border-b border-border/40 hover:bg-muted/20 transition-colors ${dimmed ? 'opacity-30' : ''}`}>
             <span className="text-[10px] font-mono text-muted-foreground self-center">
                 #{index + 1}
             </span>
@@ -65,6 +65,8 @@ export function OpenOrdersPanel() {
 
     const allOrders = orders ?? [];
     const hasData = allOrders.length > 0;
+    const isCancelling = cancelAll.isPending;
+    const justCancelled = cancelAll.isSuccess && !hasData;
 
     const lastUpdated = dataUpdatedAt
         ? new Date(dataUpdatedAt).toLocaleTimeString('en-US', { hour12: false })
@@ -72,7 +74,6 @@ export function OpenOrdersPanel() {
 
     // Sort: sells descending (highest ask first), then buys descending
     const sortedOrders = [...allOrders].sort((a, b) => {
-        // Sells first (higher prices), then buys
         const aSell = a.side === Side.sell;
         const bSell = b.side === Side.sell;
         if (aSell && !bSell) return -1;
@@ -98,7 +99,7 @@ export function OpenOrdersPanel() {
                 <div className="flex items-center gap-2">
                     <ListOrdered className="w-4 h-4 text-muted-foreground" />
                     <span className="terminal-label">Open Orders</span>
-                    {hasData && (
+                    {hasData && !isCancelling && (
                         <div className="flex items-center gap-1">
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-terminal-buy/10 text-terminal-buy border border-terminal-buy/30">
                                 {buyCount} BUY
@@ -108,27 +109,38 @@ export function OpenOrdersPanel() {
                             </span>
                         </div>
                     )}
+                    {isCancelling && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-terminal-warning/10 text-terminal-warning border border-terminal-warning/30">
+                            <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                            CANCELLING…
+                        </span>
+                    )}
                 </div>
                 <div className="flex items-center gap-2">
-                    {hasData && (
+                    {(hasData || isCancelling) && (
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={handleCancelAll}
-                            disabled={cancelAll.isPending}
+                            disabled={isCancelling}
                             className="h-6 px-2 text-[10px] font-mono tracking-widest uppercase bg-terminal-sell/10 text-terminal-sell border border-terminal-sell/30 hover:bg-terminal-sell/20 disabled:opacity-40"
                         >
-                            {cancelAll.isPending ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
+                            {isCancelling ? (
+                                <>
+                                    <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                                    Cancelling…
+                                </>
                             ) : (
-                                <XCircle className="w-3 h-3 mr-1" />
+                                <>
+                                    <XCircle className="w-3 h-3 mr-1" />
+                                    Cancel All
+                                </>
                             )}
-                            Cancel All
                         </Button>
                     )}
                     <button
                         onClick={() => refetch()}
-                        disabled={isFetching}
+                        disabled={isFetching || isCancelling}
                         className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                         title="Refresh open orders"
                     >
@@ -142,6 +154,14 @@ export function OpenOrdersPanel() {
                 <div className="flex items-center gap-2 text-xs font-mono text-terminal-sell bg-terminal-sell/5 border border-terminal-sell/25 rounded px-3 py-2">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                     <span>Failed to cancel orders. Check canister connectivity.</span>
+                </div>
+            )}
+
+            {/* Cancel All success banner */}
+            {justCancelled && (
+                <div className="flex items-center gap-2 text-xs font-mono text-terminal-buy bg-terminal-buy/5 border border-terminal-buy/25 rounded px-3 py-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>All orders cancelled successfully.</span>
                 </div>
             )}
 
@@ -167,6 +187,28 @@ export function OpenOrdersPanel() {
                     >
                         Retry
                     </button>
+                </div>
+            ) : isCancelling ? (
+                /* Show dimmed list while cancellation is in progress */
+                <div className="relative">
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-card/70 rounded">
+                        <Loader2 className="w-6 h-6 animate-spin text-terminal-warning" />
+                        <span className="text-xs font-mono text-terminal-warning tracking-widest uppercase">
+                            Cancelling {allOrders.length} order{allOrders.length !== 1 ? 's' : ''}…
+                        </span>
+                    </div>
+                    <ScrollArea className="flex-1 max-h-[380px] pointer-events-none">
+                        <div className="grid grid-cols-[2.5rem_3rem_1fr_1fr_3.5rem] gap-2 px-3 py-1.5 border-b border-border sticky top-0 bg-card z-10">
+                            <span className="text-[10px] font-mono text-muted-foreground">#</span>
+                            <span className="text-[10px] font-mono text-muted-foreground">SIDE</span>
+                            <span className="text-[10px] font-mono text-muted-foreground text-right">PRICE (ckUSDT)</span>
+                            <span className="text-[10px] font-mono text-muted-foreground text-right">QTY (ICP)</span>
+                            <span className="text-[10px] font-mono text-muted-foreground text-right">TIME</span>
+                        </div>
+                        {sortedOrders.map((order, i) => (
+                            <OrderRow key={`${order.orderId}-${i}`} entry={order} index={i} dimmed />
+                        ))}
+                    </ScrollArea>
                 </div>
             ) : !hasData ? (
                 <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
@@ -199,7 +241,7 @@ export function OpenOrdersPanel() {
             {lastUpdated && (
                 <div className="flex items-center text-xs font-mono text-muted-foreground pt-1 border-t border-border">
                     <span>Updated: {lastUpdated}</span>
-                    {hasData && (
+                    {hasData && !isCancelling && (
                         <span className="ml-auto opacity-60">{allOrders.length} orders</span>
                     )}
                 </div>
