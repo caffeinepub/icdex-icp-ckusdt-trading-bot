@@ -1,74 +1,56 @@
 {
   "kind": "build_request",
-  "title": "Fix order cancellation and repositioning logic",
+  "title": "Implement pending() method to query open bot orders",
   "projectName": "ICDex Grid Bot",
-  "priority": "high",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the backend order cancellation logic so that when the bot refreshes or stops, all previously placed grid orders are correctly identified and cancelled on ICDex before new orders are placed or the bot halts.",
+      "text": "Add a `pending` query method to the backend actor that returns the currently open orders placed by the bot. This method should replace any incorrect or placeholder calls previously used to retrieve open orders, and must return the same order data shape already used in the codebase (side, price, quantity, order ID).",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6"
         ],
         "quotes": [
-          "cancelamento e reposicionamento correto das ordens."
+          "Método pending — consultar ordens abertas do bot (substituindo qualquer chamada incorreta)"
         ]
       },
       "acceptanceCriteria": [
-        "When the bot stops, all open orders placed by the bot are cancelled on ICDex and none remain open.",
-        "When the bot refreshes its grid, existing orders from the previous cycle are cancelled before new orders are placed.",
-        "Cancellation failures are logged to the activity log with sufficient detail.",
-        "No duplicate or orphaned orders remain after a cancel-and-reposition cycle."
+        "A `pending` query function exists in backend/main.mo and returns the list of open bot orders.",
+        "The return type matches the existing open order data structure used elsewhere in the actor.",
+        "Any previous incorrect API call used to fetch open orders is replaced by this `pending` method.",
+        "Calling `pending` when no orders are open returns an empty array without error."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Fix the backend order repositioning logic so that after cancellation, the bot correctly recalculates grid price levels and places new buy/sell orders at the updated positions based on the current market price and configured spread/grid parameters.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "cancelamento e reposicionamento correto das ordens."
-        ]
-      },
-      "acceptanceCriteria": [
-        "After cancellation, the bot places the correct number of buy and sell orders as configured (numOrders).",
-        "New orders are placed at price levels derived from the current mid price and the configured spread.",
-        "The activity log records each repositioning cycle with the number of orders cancelled and placed.",
-        "If order placement fails for any grid level, the error is logged and the bot continues placing remaining orders."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Update the OpenOrdersPanel and the cancel-all mutation in useQueries.ts so that after a cancel-all action completes, the open orders list is immediately refreshed and the UI reflects the updated (empty or repositioned) order state.",
+      "text": "Update the frontend `useQueries.ts` open orders hook to call the backend `pending` method instead of any previously incorrect call. Ensure the OpenOrdersPanel continues to display the fetched orders correctly.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6"
         ],
         "quotes": [
-          "cancelamento e reposicionamento correto das ordens."
+          "Método pending — consultar ordens abertas do bot (substituindo qualquer chamada incorreta)"
         ]
       },
       "acceptanceCriteria": [
-        "After clicking cancel-all in OpenOrdersPanel, the open orders list refetches automatically.",
-        "The panel shows an empty state or updated orders list once cancellation is confirmed by the backend.",
-        "No stale orders remain visible in the UI after successful cancellation."
+        "The open orders React Query hook in useQueries.ts calls `actor.pending()` (or equivalent generated name).",
+        "The OpenOrdersPanel renders the orders returned by the `pending` call without regression.",
+        "No stale or incorrect actor method name remains in the open orders query."
       ]
     }
   ],
   "constraints": [
-    "All Motoko logic must remain in backend/main.mo as a single actor.",
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui."
+    "Do not alter the immutable frontend hook files: useInternetIdentity.ts, useActor.ts, or main.tsx.",
+    "The new `pending` method must be a query (not an update) call for read-only order consultation.",
+    "Preserve all existing bot state, order placement, and cancellation logic in the backend actor."
   ],
   "nonGoals": [
-    "Adding new grid configuration parameters beyond existing spread/numOrders/interval.",
-    "Implementing PnL tracking or balance verification.",
-    "Changing the visual theme or layout of the dashboard."
+    "Changing the grid order placement or cancellation logic.",
+    "Modifying the TradeHistoryPanel or ActivityLogPanel.",
+    "Adding new configuration parameters or bot control behavior."
   ],
   "imageRequirements": {
     "required": [],

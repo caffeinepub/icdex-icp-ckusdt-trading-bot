@@ -1,52 +1,38 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T22:03:27.640Z",
+  "generatedAt": "2026-03-01T00:05:25.210Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 1,
+    "total": 2,
+    "implemented": 0,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix the backend order cancellation logic so that when the bot refreshes or stops, all previously placed grid orders are correctly identified and cancelled on ICDex before new orders are placed or the bot halts.",
+        "summary": "Add a `pending` query method to the backend actor that returns the currently open orders placed by the bot. This method should replace any incorrect or placeholder calls previously used to retrieve open orders, and must return the same order data shape already used in the codebase (side, price, quantity, order ID).",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Fix the backend order repositioning logic so that after cancellation, the bot correctly recalculates grid price levels and places new buy/sell orders at the updated positions based on the current market price and configured spread/grid parameters.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Update the OpenOrdersPanel and the cancel-all mutation in useQueries.ts so that after a cancel-all action completes, the open orders list is immediately refreshed and the UI reflects the updated (empty or repositioned) order state.",
-        "status": "implemented",
+        "summary": "Update the frontend `useQueries.ts` open orders hook to call the backend `pending` method instead of any previously incorrect call. Ensure the OpenOrdersPanel continues to display the fetched orders correctly.",
+        "status": "missing",
         "plannedFiles": [
           "frontend/src/hooks/useQueries.ts",
           "frontend/src/components/OpenOrdersPanel.tsx"
         ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/OpenOrdersPanel.tsx"
-        ]
+        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
-    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/OpenOrdersPanel.tsx",
-    "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -1,32 +1,21 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Trading/order management app with order placement, cancellation, and repositioning features.",
+  "summary": "Bot order management project with pending order consultation method replacing incorrect API calls.",
   "architectural_notes": [],
-  "known_issues": [
-    "Order cancellation and repositioning not working correctly"
-  ],
+  "known_issues": [],
   "isFixRequest": true,
-  "existing_features": [
-    {
-      "id": "feature-update-the-openorderspanel-and-the-cancel-all-mutation-in-usequeries-ts-so-that-after-a-cancel-all-action-completes-the-open-orders-list-is-immediately-refreshed-and-the-ui-reflects-the-updated-empty-or-repositioned-order-state",
-      "title": "Update the OpenOrdersPanel and the cancel-all mutation in useQueries.ts so that after a cancel-all action completes, the open orders list is immediately refreshed and the UI reflects the updated (empty or repositioned) order state.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    }
-  ],
+  "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Correct order cancellation and repositioning behavior",
+      "summary": "Implement pending method to consult open bot orders, replacing any incorrect API calls",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Fix the backend order cancellation logic so that when the bot refreshes or stops, all previously placed grid orders are correctly identified and cancelled on ICDex before new orders are placed or the bot halts.",
+      "summary": "Add a `pending` query method to the backend actor that returns the currently open orders placed by the bot. This method should replace any incorrect or placeholder calls previously used to retrieve open orders, and must return the same order data shape already used in the codebase (side, price, quantity, order ID).",
       "reqIds": [
         "REQ-1"
       ],
@@ -34,7 +23,7 @@
     },
     {
       "id": "AR-3",
-      "summary": "Fix the backend order repositioning logic so that after cancellation, the bot correctly recalculates grid price levels and places new buy/sell orders at the updated positions based on the current market price and configured spread/grid parameters.",
+      "summary": "Update the frontend `useQueries.ts` open orders hook to call the backend `pending` method instead of any previously incorrect call. Ensure the OpenOrdersPanel continues to display the fetched orders correctly.",
       "reqIds": [
         "REQ-2"
       ],

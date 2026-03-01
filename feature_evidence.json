@@ -1,24 +1,4 @@
 {
   "kind": "feature_evidence_report",
-  "features": [
-    {
-      "featureId": "feature-update-the-openorderspanel-and-the-cancel-all-mutation-in-usequeries-ts-so-that-after-a-cancel-all-action-completes-the-open-orders-list-is-immediately-refreshed-and-the-ui-reflects-the-updated-empty-or-repositioned-order-state",
-      "featureTitle": "Update the OpenOrdersPanel and the cancel-all mutation in useQueries.ts so that after a cancel-all action completes, the open orders list is immediately refreshed and the UI reflects the updated (empty or repositioned) order state.",
-      "files": [
-        "frontend/src/components/OpenOrdersPanel.tsx",
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
-      ],
-      "confidence": "high"
-    }
-  ]
+  "features": []
 }

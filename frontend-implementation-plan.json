@@ -1,26 +1,26 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix order cancellation and repositioning logic - Frontend",
+  "title": "Implement pending() method to query open bot orders",
   "requirements": [
     {
-      "id": "REQ-3",
-      "summary": "Update OpenOrdersPanel and cancel-all mutation to automatically refresh the open orders list after cancellation completes",
+      "id": "REQ-2",
+      "summary": "Update the frontend open orders hook to call the backend `pending` method instead of any previously incorrect call, ensuring OpenOrdersPanel displays fetched orders correctly.",
       "acceptanceCriteria": [
-        "After clicking cancel-all in OpenOrdersPanel, the open orders list refetches automatically.",
-        "The panel shows an empty state or updated orders list once cancellation is confirmed by the backend.",
-        "No stale orders remain visible in the UI after successful cancellation."
+        "The open orders React Query hook in useQueries.ts calls `actor.pending()` (or equivalent generated name).",
+        "The OpenOrdersPanel renders the orders returned by the `pending` call without regression.",
+        "No stale or incorrect actor method name remains in the open orders query."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Modify the useCancelAllOrders mutation to invalidate the 'openOrders' query key in its onSuccess callback, ensuring the open orders list refetches immediately after a successful cancel-all operation completes."
+          "description": "Update the open orders React Query hook to call `actor.pending()` instead of any previous incorrect backend method. Ensure the query key, staleTime, and enabled conditions remain unchanged. The `pending` method returns Array<OrderEntry> matching the existing order data shape (side, price, quantity, orderId, status, timestamp)."
         },
         {
           "path": "frontend/src/components/OpenOrdersPanel.tsx",
           "operation": "modify",
-          "description": "Update the OpenOrdersPanel component to handle the loading state during mutation and show appropriate feedback (loading indicator, success message, or error state) while the cancel-all operation is in progress and the orders list is refetching."
+          "description": "Verify that the OpenOrdersPanel correctly consumes the updated open orders query hook and renders the orders returned by `actor.pending()` without regression. Ensure buy/sell counts, sorting by side and price, and the 'Cancel All' button functionality remain intact."
         }
       ]
     }
