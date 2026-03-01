@@ -1,62 +1,44 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T00:29:11.683Z",
+  "generatedAt": "2026-03-01T00:52:01.594Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 2,
+    "total": 2,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add a canister health/status check in the backend that can be called even when the bot is in a stopped or idle state, so the frontend can determine canister availability before attempting state-changing calls like startBot.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Fix the Market Data LIVE section so that Mid Price, Best Bid, Best Ask, Buy Levels, and Sell Levels display real values instead of dashes or zeros. The issue is that the ICDex quote/order-book fetch is failing silently; add proper error surfacing and a retry/fallback so the UI shows either a live value or a clear error message rather than blank dashes.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/MarketDataPanel.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/MarketDataPanel.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
       },
       {
         "id": "REQ-2",
-        "summary": "In the BotControlPanel and the useQueries hooks, wrap the startBot mutation call with error handling that detects IC0508 (canister stopped / reject code 5) and surfaces a clear, human-readable error message to the user instead of a raw rejection dump.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/BotControlPanel.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/BotControlPanel.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Add a canister availability pre-check in the startBot and stopBot mutation flows: before invoking the mutation, call the lightweight query method (ping/getStatus) and if it fails or indicates the canister is unavailable, abort with a friendly error rather than letting the update call fail with a raw IC error.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/BotControlPanel.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/BotControlPanel.tsx"
-        ]
+        "summary": "In the backend, ensure the query function that retrieves market data (mid price, best bid/ask, order book levels) from the ICDex canister returns a structured error variant when the external call fails rather than returning zero/null silently. Log the failure to the activity log so the operator can diagnose the root cause.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/BotControlPanel.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
+    "frontend/src/components/MarketDataPanel.tsx",
     "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",

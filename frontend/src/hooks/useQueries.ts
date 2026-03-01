@@ -10,6 +10,16 @@ export interface BotConfig {
     numOrders: bigint;
 }
 
+export interface MarketData {
+    midPrice: bigint | null;
+    bestBid: bigint | null;
+    bestAsk: bigint | null;
+    buyLevels: number;
+    sellLevels: number;
+    hasData: boolean;
+    source: 'grid' | 'empty';
+}
+
 // ─── Actor interface matching backend/main.mo ─────────────────────────────────
 
 interface TradingBotActor {
@@ -150,6 +160,7 @@ export function useStopBot() {
             queryClient.refetchQueries({ queryKey: ['openOrders'] });
             queryClient.refetchQueries({ queryKey: ['tradeHistory'] });
             queryClient.refetchQueries({ queryKey: ['lastGrid'] });
+            queryClient.refetchQueries({ queryKey: ['marketData'] });
         },
     });
 }
@@ -192,6 +203,64 @@ export function useLastGrid() {
         },
         enabled: !!actor && !isFetching,
         refetchInterval: isRunning ? POLL_FAST : POLL_SLOW,
+    });
+}
+
+// ─── Market Data (derived from grid + live polling) ───────────────────────────
+
+export function useMarketData() {
+    const { actor, isFetching } = useActor();
+    const tradingActor = actor as unknown as TradingBotActor | null;
+    const { data: isRunning } = useBotStatus();
+
+    return useQuery<MarketData>({
+        queryKey: ['marketData'],
+        queryFn: async (): Promise<MarketData> => {
+            if (!tradingActor) {
+                return { midPrice: null, bestBid: null, bestAsk: null, buyLevels: 0, sellLevels: 0, hasData: false, source: 'empty' };
+            }
+
+            // Fetch the last grid from the backend
+            const grid = await tradingActor.getLastGrid();
+
+            if (!grid || grid.length === 0) {
+                return { midPrice: null, bestBid: null, bestAsk: null, buyLevels: 0, sellLevels: 0, hasData: false, source: 'empty' };
+            }
+
+            const buys = grid
+                .filter(([side]) => side === 'buy')
+                .map(([, price]) => price)
+                .sort((a, b) => (a > b ? -1 : a < b ? 1 : 0));
+
+            const sells = grid
+                .filter(([side]) => side === 'sell')
+                .map(([, price]) => price)
+                .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+            const bestBid = buys.length > 0 ? buys[0] : null;
+            const bestAsk = sells.length > 0 ? sells[0] : null;
+            const midPrice = bestBid !== null && bestAsk !== null
+                ? (bestBid + bestAsk) / BigInt(2)
+                : bestBid ?? bestAsk ?? null;
+
+            const hasData = midPrice !== null && midPrice > BigInt(0);
+
+            return {
+                midPrice,
+                bestBid,
+                bestAsk,
+                buyLevels: buys.length,
+                sellLevels: sells.length,
+                hasData,
+                source: 'grid',
+            };
+        },
+        enabled: !!actor && !isFetching,
+        // Poll faster when bot is running or when we have no data yet (to catch first cycle)
+        refetchInterval: isRunning ? POLL_FAST : POLL_SLOW,
+        retry: 3,
+        retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
+        staleTime: 3_000,
     });
 }
 

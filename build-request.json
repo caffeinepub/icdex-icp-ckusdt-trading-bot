@@ -1,75 +1,60 @@
 {
   "kind": "build_request",
-  "title": "Handle stopped canister state gracefully and add canister health check",
-  "priority": "high",
+  "title": "Fix Market Data LIVE zeroed values",
+  "projectName": "ICDex Trading Bot",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a canister health/status check in the backend that can be called even when the bot is in a stopped or idle state, so the frontend can determine canister availability before attempting state-changing calls like startBot.",
-      "target": "backend",
+      "text": "Fix the Market Data LIVE section so that Mid Price, Best Bid, Best Ask, Buy Levels, and Sell Levels display real values instead of dashes or zeros. The issue is that the ICDex quote/order-book fetch is failing silently; add proper error surfacing and a retry/fallback so the UI shows either a live value or a clear error message rather than blank dashes.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-1",
+          "msg-2"
         ],
         "quotes": [
-          "Canister erwl3-piaaa-aaaau-ae5la-cai is stopped",
-          "Method name: startBot",
-          "IC0508"
+          "Mid Price (ICP/ckUSDT)—\nBest Bid—\nBest Ask—\nBuy Levels0\nSell Levels0",
+          "vamos tentar essa abordagem tente corrigir a área de Market Data"
         ]
       },
       "acceptanceCriteria": [
-        "A lightweight query method (e.g., ping or getStatus) exists on the backend actor that returns without error regardless of bot running state.",
-        "The method does not require the bot to be running to respond successfully."
+        "MarketDataPanel displays a non-zero Mid Price when the ICDex canister is reachable.",
+        "Best Bid and Best Ask show formatted price values instead of dashes.",
+        "Buy Levels and Sell Levels show a count greater than zero when the order book is populated.",
+        "If the ICDex fetch fails, an explicit error message (not silent dashes) is shown in the panel.",
+        "The panel retries the data fetch automatically on a polling interval consistent with the existing LIVE indicator."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In the BotControlPanel and the useQueries hooks, wrap the startBot mutation call with error handling that detects IC0508 (canister stopped / reject code 5) and surfaces a clear, human-readable error message to the user instead of a raw rejection dump.",
-      "target": "frontend",
+      "text": "In the backend, ensure the query function that retrieves market data (mid price, best bid/ask, order book levels) from the ICDex canister returns a structured error variant when the external call fails rather than returning zero/null silently. Log the failure to the activity log so the operator can diagnose the root cause.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-1",
+          "msg-2"
         ],
         "quotes": [
-          "Reject code: 5",
-          "Reject text: Canister erwl3-piaaa-aaaau-ae5la-cai is stopped",
-          "Error code: IC0508"
+          "a chamada ao ICDex para buscar cotações (getQuotes ou level10) está falhando silenciosamente"
         ]
       },
       "acceptanceCriteria": [
-        "When startBot is called and the canister returns IC0508 / reject code 5, the UI displays a user-friendly error message such as 'The canister is currently stopped. Please wait and try again.'",
-        "The raw rejection JSON is not shown to the user.",
-        "The Start button returns to its default (non-loading) state after the error is caught."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Add a canister availability pre-check in the startBot and stopBot mutation flows: before invoking the mutation, call the lightweight query method (ping/getStatus) and if it fails or indicates the canister is unavailable, abort with a friendly error rather than letting the update call fail with a raw IC error.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-latest"
-        ],
-        "quotes": [
-          "Canister erwl3-piaaa-aaaau-ae5la-cai is stopped",
-          "Method name: startBot"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If the pre-check query fails before startBot/stopBot, the user sees a clear message that the canister is not reachable.",
-        "The mutation is not dispatched to the canister if the pre-check indicates unavailability.",
-        "Normal start/stop flow is unaffected when the canister is running."
+        "The backend query for market data returns a Result or variant type that distinguishes success from failure.",
+        "A failure from the ICDex canister call is caught and its description is appended to the activity log.",
+        "Zero values are never returned when the underlying call failed; an error variant is returned instead."
       ]
     }
   ],
   "constraints": [
-    "Do not modify frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or any files under frontend/src/components/ui.",
-    "All backend logic must remain in backend/main.mo (single-actor architecture)."
+    "Changes must be minimal and focused — do not refactor unrelated panels or hooks.",
+    "Do not alter the bot start/stop logic or order management code.",
+    "Keep the single-actor Motoko architecture intact."
   ],
   "nonGoals": [
-    "Automatically restarting or upgrading the canister from within the app.",
-    "Changes to the core grid trading logic or order placement mechanics.",
-    "Authentication flow changes."
+    "Redesigning the dashboard layout or other panels.",
+    "Adding new trading strategy logic.",
+    "Changing authentication or Internet Identity integration."
   ],
   "imageRequirements": {
     "required": [],

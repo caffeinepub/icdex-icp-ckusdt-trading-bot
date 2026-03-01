@@ -1,44 +1,37 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "ICP canister project (canister ID: erwl3-piaaa-aaaau-ae5la-cai) with a bot feature. Currently experiencing a stopped canister error when calling startBot.",
+  "summary": "ICP/ckUSDT trading bot project with ICDex integration. Currently deployed (Version 33 in production). Issue with Market Data LIVE section showing zeroed/dash values for Mid Price, Best Bid, Best Ask, and order book levels.",
   "architectural_notes": [
-    "Deployed on Internet Computer Protocol (ICP); canister ID: erwl3-piaaa-aaaau-ae5la-cai"
+    "Market Data LIVE section calls ICDex API (getQuotes or level10) for ICP/ckUSDT price data — currently failing silently causing zeroed values",
+    "Build changes should be minimal/focused to avoid budget_exceeded errors"
   ],
   "known_issues": [
-    "IC0508: Canister erwl3-piaaa-aaaau-ae5la-cai is stopped — startBot call rejected with reject code 5"
+    "Market Data LIVE shows zeroed/dash values for Mid Price, Best Bid, Best Ask, Buy Levels, Sell Levels — ICDex quote fetch failing silently"
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-in-the-botcontrolpanel-and-the-usequeries-hooks-wrap-the-startbot-mutation-call-with-error-handling-that-detects-ic0508-canister-stopped-reject-code-5-and-surfaces-a-clear-human-readable-error-message-to-the-user-instead-of-a-raw-rejection-dump",
-      "title": "In the BotControlPanel and the useQueries hooks, wrap the startBot mutation call with error handling that detects IC0508 (canister stopped / reject code 5) and surfaces a clear, human-readable error message to the user instead of a raw rejection dump.",
+      "id": "feature-fix-the-market-data-live-section-so-that-mid-price-best-bid-best-ask-buy-levels-and-sell-levels-display-real-values-instead-of-dashes-or-zeros-the-issue-is-that-the-icdex-quote-order-book-fetch-is-failing-silently-add-proper-error-surfacing-and-a-retry-fallback-so-the-ui-shows-either-a-live-value-or-a-clear-error-message-rather-than-blank-dashes",
+      "title": "Fix the Market Data LIVE section so that Mid Price, Best Bid, Best Ask, Buy Levels, and Sell Levels display real values instead of dashes or zeros. The issue is that the ICDex quote/order-book fetch is failing silently; add proper error surfacing and a retry/fallback so the UI shows either a live value or a clear error message rather than blank dashes.",
       "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-canister-availability-pre-check-in-the-startbot-and-stopbot-mutation-flows-before-invoking-the-mutation-call-the-lightweight-query-method-ping-getstatus-and-if-it-fails-or-indicates-the-canister-is-unavailable-abort-with-a-friendly-error-rather-than-letting-the-update-call-fail-with-a-raw-ic-error",
-      "title": "Add a canister availability pre-check in the startBot and stopBot mutation flows: before invoking the mutation, call the lightweight query method (ping/getStatus) and if it fails or indicates the canister is unavailable, abort with a friendly error rather than letting the update call fail with a raw IC error.",
-      "reqIds": [
-        "REQ-3"
+        "REQ-1"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [
     {
-      "id": "AR-1",
-      "summary": "Add a canister health/status check in the backend that can be called even when the bot is in a stopped or idle state, so the frontend can determine canister availability before attempting state-changing calls like startBot.",
+      "id": "AR-2",
+      "summary": "In the backend, ensure the query function that retrieves market data (mid price, best bid/ask, order book levels) from the ICDex canister returns a structured error variant when the external call fails rather than returning zero/null silently. Log the failure to the activity log so the operator can diagnose the root cause.",
       "reqIds": [
-        "REQ-1"
+        "REQ-2"
       ],
       "status": "pending"
     }
   ],
   "gameProjectType": "none",
-  "projectName": "Handle stopped canister state gracefully and add canister health check",
+  "projectName": "ICDex Trading Bot",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -5,9 +5,9 @@ import Map "mo:core/Map";
 import Queue "mo:core/Queue";
 import Iter "mo:core/Iter";
 import Timer "mo:core/Timer";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+
 actor {
   // ICDex Types (no HTTP outcalls yet)
   type Side = { #buy; #sell };
@@ -140,10 +140,8 @@ actor {
 
   public query ({ caller }) func getLastGrid() : async [(Text, Nat)] {
     let gridCopy = lastGridData;
-    gridCopy.map(
-      func((side, price)) {
-        (sideToText(side), price);
-      }
+    gridCopy.map<(Side, Nat), (Text, Nat)>(
+      func((side, price)) { (sideToText(side), price) }
     );
   };
 

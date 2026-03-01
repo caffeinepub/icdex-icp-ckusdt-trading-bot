@@ -1,47 +1,28 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Handle stopped canister state gracefully and add canister health check",
+  "title": "Fix Market Data LIVE zeroed values",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Wrap startBot mutation with error handling to detect IC0508 (canister stopped) and surface a clear, human-readable error message instead of raw rejection.",
+      "id": "REQ-1",
+      "summary": "Fix the Market Data LIVE section to display real values (Mid Price, Best Bid, Best Ask, Buy/Sell Levels) instead of dashes or zeros by adding proper error surfacing, retry logic, and fallback behavior when the ICDex quote/order-book fetch fails",
       "acceptanceCriteria": [
-        "When startBot is called and the canister returns IC0508 / reject code 5, the UI displays a user-friendly error message such as 'The canister is currently stopped. Please wait and try again.'",
-        "The raw rejection JSON is not shown to the user.",
-        "The Start button returns to its default (non-loading) state after the error is caught."
+        "MarketDataPanel displays a non-zero Mid Price when the ICDex canister is reachable.",
+        "Best Bid and Best Ask show formatted price values instead of dashes.",
+        "Buy Levels and Sell Levels show a count greater than zero when the order book is populated.",
+        "If the ICDex fetch fails, an explicit error message (not silent dashes) is shown in the panel.",
+        "The panel retries the data fetch automatically on a polling interval consistent with the existing LIVE indicator."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/components/MarketDataPanel.tsx",
           "operation": "modify",
-          "description": "Modify the startBot mutation to wrap the backend call with a try-catch block that detects IC0508 (reject code 5) errors. When caught, throw a user-friendly Error with message 'The canister is currently stopped. Please wait and try again.' instead of propagating the raw rejection. Keep all other errors unchanged."
+          "description": "Enhance the MarketDataPanel component to display Best Bid, Best Ask, Buy Levels, and Sell Levels from the order book data instead of only showing the derived mid price. Add explicit error state handling to show a clear error message when the fetch fails. Ensure the panel surfaces the error from the backend query instead of silently showing dashes. Update the LIVE status indicator logic to reflect fetch success/failure and include retry behavior on the existing polling interval."
         },
-        {
-          "path": "frontend/src/components/BotControlPanel.tsx",
-          "operation": "modify",
-          "description": "Update the BotControlPanel to display error messages from the startBot mutation (mutation.error?.message) in a user-friendly format. Ensure the Start button returns to its default non-loading state when mutation.isError is true. Use existing UI components for error display (e.g., error text with appropriate styling)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Add a canister availability pre-check before startBot and stopBot mutations by calling the lightweight healthCheck query; abort with a friendly error if unavailable.",
-      "acceptanceCriteria": [
-        "If the pre-check query fails before startBot/stopBot, the user sees a clear message that the canister is not reachable.",
-        "The mutation is not dispatched to the canister if the pre-check indicates unavailability.",
-        "Normal start/stop flow is unaffected when the canister is running."
-      ],
-      "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Modify the startBot and stopBot mutations to call the backend healthCheck query method before invoking the mutation. If healthCheck returns false or throws an error, abort the mutation immediately and throw a user-friendly Error with message 'The canister is not reachable. Please try again later.' If healthCheck succeeds, proceed with the original mutation logic. Wrap the healthCheck call in a try-catch to handle network or query failures."
-        },
-        {
-          "path": "frontend/src/components/BotControlPanel.tsx",
-          "operation": "modify",
-          "description": "Ensure that the BotControlPanel displays pre-check errors from both startBot and stopBot mutations. The error message from the pre-check (e.g., 'The canister is not reachable. Please try again later.') should be shown clearly to the user, and the relevant button (Start/Stop) should return to its default state when an error occurs."
+          "description": "Add a new React Query hook (e.g., useMarketData) that fetches market data (mid price, best bid, best ask, order book levels) from the backend. Configure the hook to poll at an interval consistent with the existing LIVE indicator, handle errors explicitly by surfacing the backend error variant, and retry on failure. Ensure that when the backend returns an error variant, the query error state is populated so the MarketDataPanel can display a meaningful error message instead of dashes or zeros."
         }
       ]
     }

@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-the-botcontrolpanel-and-the-usequeries-hooks-wrap-the-startbot-mutation-call-with-error-handling-that-detects-ic0508-canister-stopped-reject-code-5-and-surfaces-a-clear-human-readable-error-message-to-the-user-instead-of-a-raw-rejection-dump",
-      "featureTitle": "In the BotControlPanel and the useQueries hooks, wrap the startBot mutation call with error handling that detects IC0508 (canister stopped / reject code 5) and surfaces a clear, human-readable error message to the user instead of a raw rejection dump.",
+      "featureId": "feature-fix-the-market-data-live-section-so-that-mid-price-best-bid-best-ask-buy-levels-and-sell-levels-display-real-values-instead-of-dashes-or-zeros-the-issue-is-that-the-icdex-quote-order-book-fetch-is-failing-silently-add-proper-error-surfacing-and-a-retry-fallback-so-the-ui-shows-either-a-live-value-or-a-clear-error-message-rather-than-blank-dashes",
+      "featureTitle": "Fix the Market Data LIVE section so that Mid Price, Best Bid, Best Ask, Buy Levels, and Sell Levels display real values instead of dashes or zeros. The issue is that the ICDex quote/order-book fetch is failing silently; add proper error surfacing and a retry/fallback so the UI shows either a live value or a clear error message rather than blank dashes.",
       "files": [
-        "frontend/src/components/BotControlPanel.tsx",
+        "frontend/src/components/MarketDataPanel.tsx",
         "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
@@ -16,26 +16,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-a-canister-availability-pre-check-in-the-startbot-and-stopbot-mutation-flows-before-invoking-the-mutation-call-the-lightweight-query-method-ping-getstatus-and-if-it-fails-or-indicates-the-canister-is-unavailable-abort-with-a-friendly-error-rather-than-letting-the-update-call-fail-with-a-raw-ic-error",
-      "featureTitle": "Add a canister availability pre-check in the startBot and stopBot mutation flows: before invoking the mutation, call the lightweight query method (ping/getStatus) and if it fails or indicates the canister is unavailable, abort with a friendly error rather than letting the update call fail with a raw IC error.",
-      "files": [
-        "frontend/src/components/BotControlPanel.tsx",
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
+        "REQ-1"
       ],
       "confidence": "high"
     }
