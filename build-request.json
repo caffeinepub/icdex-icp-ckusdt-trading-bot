@@ -1,41 +1,39 @@
 {
   "kind": "build_request",
-  "title": "Add detailed step-by-step logging to tradingLoop()",
+  "title": "Step 1 of 3: Replace getOpenOrders with pending in tradingLoop order fetching",
   "projectName": "ICDex Grid Bot",
-  "priority": "normal",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In the backend tradingLoop() function, add detailed activity log entries at every key step: (1) before fetching the current market price, (2) after successfully fetching the price, (3) before placing each individual buy/sell order, (4) after each order placement attempt (logging success with order ID or failure with error message), (5) when catching any exception or error during the loop. Each log entry must include a descriptive message so the frontend Activity Log panel can display exactly where the loop is succeeding or failing.",
+      "text": "In backend/main.mo, locate only the first occurrence where getOpenOrders is called on the ICDex actor inside the tradingLoop function. Replace that single call with the correct 'pending' method. Do not change any other part of the file. Preserve all surrounding logic, variable names, and structure exactly as-is.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-recent"
         ],
         "quotes": [
-          "Opção A — Adicionar log detalhado no loop",
-          "Adicionamos mensagens de log em cada passo do tradingLoop(): antes de buscar preço, antes de criar ordem, ao receber erro."
+          "Divida a troca do getOpenOrders por pending, em 2 ou 3 etapas... nao tente trocar todo o codigo de uma vez."
         ]
       },
       "acceptanceCriteria": [
-        "After starting the bot, the Activity Log panel shows a log entry for the price fetch attempt.",
-        "After a successful price fetch, a log entry shows the fetched price value.",
-        "Before each order is placed, a log entry is written indicating the side (buy/sell) and price level.",
-        "After each order placement, a log entry indicates success (with order ID) or failure (with error reason).",
-        "Any exception thrown inside tradingLoop() is caught and logged with an error message.",
-        "No silent failures: every code path in tradingLoop() produces at least one log entry."
+        "The first getOpenOrders call inside tradingLoop is replaced with pending",
+        "No other lines in main.mo are modified",
+        "The Motoko file compiles without errors",
+        "The rest of the bot logic (order placement, cancellation, logging) remains unchanged"
       ]
     }
   ],
   "constraints": [
-    "Do not change the bot logic, grid calculation, or order placement strategy — only add logging.",
-    "Do not modify any frontend files.",
-    "Keep all changes inside backend/main.mo."
+    "Only modify the single first occurrence of getOpenOrders inside tradingLoop — do not touch any other code",
+    "Do not refactor, reformat, or restructure any other part of main.mo",
+    "Do not modify any frontend files"
   ],
   "nonGoals": [
-    "Fixing the underlying order placement issue (that comes after identifying the cause via logs).",
-    "Rewriting or refactoring the bot architecture.",
-    "Adding new frontend UI components or panels."
+    "Replacing all remaining getOpenOrders occurrences (reserved for steps 2 and 3)",
+    "Any frontend changes",
+    "Any other bug fixes or feature additions",
+    "Modifying the ICDex actor interface or type definitions beyond what is strictly required for this single call"
   ],
   "imageRequirements": {
     "required": [],

@@ -1,27 +1,22 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Trading bot dashboard project (ICDex grid bot) with canister-based backend. Bot is running but open orders are not appearing. Debugging by adding detailed logging to the trading loop.",
+  "summary": "Trading bot project on Internet Computer (ICP) using ICDex exchange. Bot canister: xeccu-3iaaa-aaaai-at4kq-cai, controlled by principal 7om5v-4ertl-w75xg-of3g3-uznaj-7gsav-r2ekd-d36r4-273ar-lpm45-vqe. ~48 ckUSDT deposited to ICDex for trading. Bot is failing to create orders due to incorrect use of getOpenOrders method (should be 'pending'). User plans to also send ~$40 ICP to ICDex.",
   "architectural_notes": [
-    "Backend is an ICP canister interacting with ICDex for grid trading",
-    "Bot loop runs every 10s with configurable spread and order count",
-    "Open orders panel queries canister pending/pendingAll methods"
+    "Bot canister: xeccu-3iaaa-aaaai-at4kq-cai, controller principal: 7om5v-4ertl-w75xg-of3g3-uznaj-7gsav-r2ekd-d36r4-273ar-lpm45-vqe",
+    "ICDex canister: jgxow-pqaaa-aaaar-qahaq-cai — external exchange, not owned by user",
+    "~48 ckUSDT deposited to ICDex for bot trading operations",
+    "Cycles for bot computation must be sent to bot canister xeccu-3iaaa-aaaai-at4kq-cai via NNS top-up, not to ICDex canister"
   ],
   "known_issues": [
-    "Bot starts successfully but no orders appear in Open Orders panel and no error logs are generated after bot start"
+    "Bot fails to create orders: getOpenOrders method does not exist on ICDex — must be replaced with 'pending'. Fix should be done in small incremental steps to avoid budget_exceeded errors."
   ],
   "isFixRequest": true,
   "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add detailed step-by-step logging in tradingLoop() to reveal where the bot is failing (price fetch, order creation, errors)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "In the backend tradingLoop() function, add detailed activity log entries at every key step: (1) before fetching the current market price, (2) after successfully fetching the price, (3) before placing each individual buy/sell order, (4) after each order placement attempt (logging success with order ID or failure with error message), (5) when catching any exception or error during the loop. Each log entry must include a descriptive message so the frontend Activity Log panel can display exactly where the loop is succeeding or failing.",
+      "summary": "In backend/main.mo, locate only the first occurrence where getOpenOrders is called on the ICDex actor inside the tradingLoop function. Replace that single call with the correct 'pending' method. Do not change any other part of the file. Preserve all surrounding logic, variable names, and structure exactly as-is.",
       "reqIds": [
         "REQ-1"
       ],
@@ -29,7 +24,7 @@
     }
   ],
   "gameProjectType": "none",
-  "projectName": "ICDex Grid Bot",
+  "projectName": "ICDex Trading Bot",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

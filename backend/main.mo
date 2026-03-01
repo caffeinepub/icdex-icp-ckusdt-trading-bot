@@ -9,8 +9,6 @@ import Runtime "mo:core/Runtime";
 import Text "mo:core/Text";
 import Int "mo:core/Int";
 
-
-
 actor {
   type Side = { #buy; #sell };
   type OrderType = { #limit; #market; #chase; #post_only };

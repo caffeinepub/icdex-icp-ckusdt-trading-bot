@@ -1,6 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add detailed step-by-step logging to tradingLoop()",
+  "title": "Step 1 of 3: Replace getOpenOrders with pending in tradingLoop order fetching",
   "requirements": []
 }

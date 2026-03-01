@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T01:47:51.632Z",
+  "generatedAt": "2026-03-01T03:49:27.084Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,7 +12,7 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In the backend tradingLoop() function, add detailed activity log entries at every key step: (1) before fetching the current market price, (2) after successfully fetching the price, (3) before placing each individual buy/sell order, (4) after each order placement attempt (logging success with order ID or failure with error message), (5) when catching any exception or error during the loop. Each log entry must include a descriptive message so the frontend Activity Log panel can display exactly where the loop is succeeding or failing.",
+        "summary": "In backend/main.mo, locate only the first occurrence where getOpenOrders is called on the ICDex actor inside the tradingLoop function. Replace that single call with the correct 'pending' method. Do not change any other part of the file. Preserve all surrounding logic, variable names, and structure exactly as-is.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
