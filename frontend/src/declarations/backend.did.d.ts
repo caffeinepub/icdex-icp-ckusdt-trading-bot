@@ -32,20 +32,33 @@ export type Side = { 'buy' : null } |
 export type Time = bigint;
 export interface _SERVICE {
   'cancelAllOpenOrders' : ActorMethod<[], { 'ok' : null } | { 'err' : string }>,
-  'cancelOneOrderTest' : ActorMethod<[], undefined>,
+  'cancelSingleOrder' : ActorMethod<
+    [bigint],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
   'getActivityLog' : ActorMethod<[bigint, bigint], Array<LogEntry>>,
+  'getBalances' : ActorMethod<
+    [],
+    { 'icpBalance' : bigint, 'ckbtcBalance' : bigint }
+  >,
   'getBotStatus' : ActorMethod<[], boolean>,
   'getConfig' : ActorMethod<
     [],
-    { 'intervalSeconds' : bigint, 'spreadBps' : bigint, 'numOrders' : bigint }
+    {
+      'spreadPips' : bigint,
+      'orderSize' : bigint,
+      'intervalSeconds' : bigint,
+      'numOrders' : bigint,
+    }
   >,
   'getLastGrid' : ActorMethod<[], Array<[string, bigint]>>,
   'getOpenOrders' : ActorMethod<[], Array<OrderEntry>>,
   'getTradeHistory' : ActorMethod<[], Array<OrderEntry>>,
   'healthCheck' : ActorMethod<[], boolean>,
-  'pending' : ActorMethod<[], Array<OrderEntry>>,
   'startBot' : ActorMethod<[], undefined>,
   'stopBot' : ActorMethod<[], undefined>,
+  'updateConfig' : ActorMethod<[bigint, bigint, bigint, bigint], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

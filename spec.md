@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the grid bot backend so that after cancelling open orders, it proceeds to calculate grid levels and place new buy/sell orders, with detailed activity log entries at each step.
+**Goal:** Perform a cleanup/code review pass on both backend and frontend code — removing dead code, unused variables, redundant imports, and stale comments — without changing any observable behaviour or public APIs.
 
 **Planned changes:**
-- Fix the trading loop to continue past the cancellation phase and execute order placement logic without silently aborting or swallowing errors.
-- Add activity log entries for each step after cancellation: grid level calculation, individual buy/sell order placement (with price), a placement summary, and any errors encountered.
-- Ensure explicit error logging when order placement fails instead of silent failure.
+- Audit `backend/main.mo`: remove unused let/var bindings, dead/unreachable code blocks, redundant imports, and stale or misleading comments
+- Audit `backend/migration.mo`: simplify or reduce to a minimal stub if its logic is no longer relevant to the current stable state shape
+- Audit all (non-immutable) frontend source files: remove unused React imports, unused state variables, dead components, duplicate fetch/query logic, and reconcile inconsistent naming conventions (camelCase for variables/functions, PascalCase for components)
 
-**User-visible outcome:** After each "Successfully cancelled all open orders" log entry, the activity log will show grid calculation and "Placing buy order / Placing sell order" messages, a final placement summary, and the open orders panel will reflect the newly placed grid orders.
+**User-visible outcome:** The codebase is cleaner and free of dead code, but all existing UI panels and backend functions behave exactly as before.

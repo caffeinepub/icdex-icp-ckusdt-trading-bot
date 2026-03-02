@@ -4,7 +4,6 @@ import Nat "mo:core/Nat";
 import Map "mo:core/Map";
 import Queue "mo:core/Queue";
 import Timer "mo:core/Timer";
-import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Text "mo:core/Text";
 import Int "mo:core/Int";
@@ -46,16 +45,20 @@ actor {
   };
 
   var intervalSeconds : Nat = 60;
-  var spreadBps : Nat = 45;
+  var spreadPips : Nat = 45;
   var numOrders : Nat = 20;
+  var orderSize : Nat = 5;
   var botRunning : Bool = false;
   var lastMidPrice : Nat = 0;
   var lastGridData : [(Side, Nat)] = [];
   var timerId : ?Timer.TimerId = null;
   var nextOrderId = 0;
+  var lastBalances : ?{ icpBalance : Nat; ckbtcBalance : Nat } = null;
 
   let orderHistoryMap = Map.empty<Nat, OrderEntry>();
   let openOrderMap = Map.empty<Nat, OrderEntry>();
+
+  let activityLog = Queue.empty<LogEntry>();
 
   type ICDex = actor {
     placeOrder : shared OrderArgs -> async OrderId;
@@ -64,15 +67,23 @@ actor {
     ticker : shared () -> async ?Ticker;
   };
 
-  let icDex = actor "jgxow-pqaaa-aaaar-qahaq-cai" : ICDex;
+  type Ledger = actor {
+    account_balance : shared { account : Blob } -> async { e8s : Nat };
+  };
+
+  type CkbtcLedger = actor {
+    icrc1_balance_of : shared { account : Blob } -> async Nat;
+  };
+
+  let icDex = actor "5u2c6-kyaaa-aaaar-qadiq-cai" : ICDex;
+  let icpLedger = actor "ryjl3-tyaaa-aaaaa-aaaba-cai" : Ledger;
+  let ckbtcLedger = actor "qcg3w-tyaaa-aaaah-qakea-cai" : CkbtcLedger;
 
   type LogEntry = {
     timestamp : Time.Time;
     eventType : Text;
     message : Text;
   };
-
-  let activityLog = Queue.empty<LogEntry>();
 
   public query ({ caller }) func getActivityLog(count : Nat, page : Nat) : async [LogEntry] {
     if (count <= 0) { return [] };
@@ -81,6 +92,7 @@ actor {
     let startIndex = page * count;
     let remainingEntries = if (totalEntries > startIndex) { totalEntries - startIndex : Nat } else { 0 };
     let countToReturn = Nat.min(count, remainingEntries);
+    if (countToReturn == 0) { return [] };
     let toVarArray = activityLog.toVarArray().toArray();
     let reversedEntries = toVarArray.reverse();
     reversedEntries.sliceToArray(startIndex, countToReturn);
@@ -121,14 +133,31 @@ actor {
 
   public query ({ caller }) func getConfig() : async {
     intervalSeconds : Nat;
-    spreadBps : Nat;
+    spreadPips : Nat;
     numOrders : Nat;
+    orderSize : Nat;
   } {
     {
       intervalSeconds;
-      spreadBps;
+      spreadPips;
       numOrders;
+      orderSize;
     };
+  };
+
+  public shared ({ caller }) func updateConfig(newInterval : Nat, newSpread : Nat, newOrders : Nat, newOrderSize : Nat) : async () {
+    let oldInterval = intervalSeconds;
+    let oldSpread = spreadPips;
+    let oldOrders = numOrders;
+    let oldOrderSize = orderSize;
+    intervalSeconds := newInterval;
+    spreadPips := newSpread;
+    numOrders := newOrders;
+    orderSize := newOrderSize;
+    addLogEntry(
+      "config_updated",
+      "Config updated from { interval: " # oldInterval.toText() # ", spread: " # oldSpread.toText() # ", orders: " # oldOrders.toText() # ", size: " # oldOrderSize.toText() # " } to { interval: " # newInterval.toText() # ", spread: " # newSpread.toText() # ", orders: " # newOrders.toText() # ", size: " # newOrderSize.toText() # " }"
+    );
   };
 
   private func sideToText(side : Side) : Text {
@@ -163,7 +192,7 @@ actor {
     };
     timerId := ?Timer.recurringTimer<system>(#seconds(intervalSeconds), tradingLoop);
     botRunning := true;
-    addLogEntry("bot_started", "Bot started with interval: " # intervalSeconds.toText() # ", spread: " # spreadBps.toText() # ", orders: " # numOrders.toText());
+    addLogEntry("bot_started", "Bot started with interval: " # intervalSeconds.toText() # ", spread: " # spreadPips.toText() # ", orders: " # numOrders.toText());
   };
 
   public shared ({ caller }) func stopBot() : async () {
@@ -186,33 +215,11 @@ actor {
     quantityInt.toNat();
   };
 
+  // Core grid trading loop with real reconciliation logic
   func tradingLoop() : async () {
     addLogEntry("trading_loop_start", "Starting new trading loop iteration");
-
     addLogEntry("fetch_best_bid", "Fetching current best bid price from ICDex");
     addLogEntry("fetch_best_ask", "Fetching current best ask price from ICDex");
-
-    let cancellationResult = await cancelAllOpenOrders();
-    switch (cancellationResult) {
-      case (#err(e)) {
-        addLogEntry("cancel_orders_error", "Error during cancelAllOpenOrders: " # e);
-        return;
-      };
-      case (#ok(_)) {
-        addLogEntry("cancel_orders_success", "Successfully cancelled all open orders");
-        let result = await continueTradingLoopAfterCancellation();
-        switch (result) {
-          case (#ok(_)) {};
-          case (#err(e)) {
-            addLogEntry("trading_loop_error", "Error after cancellation: " # e);
-          };
-        };
-      };
-    };
-  };
-
-  func continueTradingLoopAfterCancellation() : async { #ok; #err : Text } {
-    addLogEntry("continue_trading", "Continuing trading loop after all orders cancelled");
 
     let level10 = await icDex.getLevel10();
     addLogEntry("fetched_level10", "Successfully fetched level10 data");
@@ -222,15 +229,16 @@ actor {
     let midPrice = (bestBid + bestAsk) / 2 : Nat;
     lastMidPrice := midPrice;
 
-    addLogEntry("calculation", "Calculating grid prices using midPrice: " # midPrice.toText());
-
+    // Maintain grid symmetry
     let localNumOrders = numOrders;
-    let range = Nat.range(0, localNumOrders / 2);
-    let spread = spreadBps;
+    let ordersPerSide = if (localNumOrders % 2 == 0) { localNumOrders / 2 } else {
+      (localNumOrders + 1) / 2 // Round up for odd numbers
+    };
 
-    let buyGrid = range.map(
+    // Calculate price levels for each grid
+    let buyGrid = Nat.range(0, ordersPerSide).map(
       func(i) {
-        let offset = midPrice * (i + 1) * spread / 10000;
+        let offset = midPrice * (i + 1) * spreadPips / 10000;
         let price = if (midPrice > offset) {
           midPrice - offset;
         } else {
@@ -240,79 +248,134 @@ actor {
       }
     );
 
-    let sellGrid = range.map(
+    let sellGrid = Nat.range(0, ordersPerSide).map(
       func(i) {
-        let offset = midPrice * (i + 1) * spread / 10000;
-        let price = midPrice + offset;
-        (#sell, price);
+        let offset = midPrice * (i + 1) * spreadPips / 10000;
+        (#sell, midPrice + offset);
       }
     );
 
-    let toArray = buyGrid.toArray();
-    let sellArray = sellGrid.toArray();
-    lastGridData := toArray.concat(sellArray);
+    let gridArray = buyGrid.toArray().concat(sellGrid.toArray());
+    lastGridData := gridArray;
 
     addLogEntry("grid_prices", "Calculated grid prices for both buy and sell sides");
-
-    let orderPlacementResult = await placeOrders(toArray.concat(sellArray), midPrice);
-    switch (orderPlacementResult) {
-      case (#ok(_)) {
-        addLogEntry("orders_placed", "Successfully placed all orders for the grid");
-      };
-      case (#err(e : Text)) {
-        addLogEntry("place_order_error", "Error placing orders: " # e);
-      };
-    };
-    #ok;
+    await reconcileAndPlaceOrders(gridArray, midPrice);
   };
 
-  func placeOrders(grid : [(Side, Nat)], price : Nat) : async { #ok; #err : Text } {
-    let quantity = calculateOrderQuantity(price);
+  func reconcileAndPlaceOrders(grid : [(Side, Nat)], price : Nat) : async () {
+    addLogEntry("reconciliation_start", "Starting order reconciliation and placement process");
 
+    // Maintain max grid symmetry
+    let ordersPerSide = numOrders / 2;
+
+    if (ordersPerSide == 0 or ordersPerSide == 1) {
+      // Only place one order per side at the first grid level
+      await placeSingleOrderPerSide(grid[0], price);
+      await placeSingleOrderPerSide(grid[ordersPerSide], price);
+    } else if (ordersPerSide == 2) {
+      // Place only two orders at the first two grid levels for each side
+      await placeFirstTwoOrdersPerSide(grid, 0, ordersPerSide, price); // Buy orders (first 2 orders)
+      await placeFirstTwoOrdersPerSide(grid, ordersPerSide, numOrders, price); // Sell orders (first 2 sell orders)
+    } else {
+      let startBuyRange = 0;
+      let endBuyRange = Nat.min(3, ordersPerSide); // Only place 3 buy orders
+      await placeOrdersInRange(grid, startBuyRange, endBuyRange, price);
+
+      let startSellRange = ordersPerSide;
+      let endSellRange = Nat.min(endBuyRange + ordersPerSide, grid.size());
+      await placeOrdersInRange(grid, startSellRange, endSellRange, price);
+    };
+
+    await tryCancelRestOrders();
+  };
+
+  func tryCancelRestOrders() : async () {
+    let cancelResult = await cancelAllOpenOrders();
+    switch (cancelResult) {
+      case (#ok) {
+        addLogEntry("cancel_orders_success", "Successfully cancelled remaining orders");
+      };
+      case (#err(e)) {
+        addLogEntry("cancel_orders_error", "Error cancelling remaining orders: " # e);
+      };
+    };
+  };
+
+  func placeFirstTwoOrdersPerSide(grid : [(Side, Nat)], startIndex : Nat, endIndex : Nat, price : Nat) : async () {
+    let range = Nat.range(
+      startIndex,
+      Nat.min(endIndex, grid.size()),
+    );
+    for (i in range) {
+      await placeSingleOrderPerSide(grid[i], price);
+    };
+  };
+
+  func placeSingleOrderPerSide(level : (Side, Nat), price : Nat) : async () {
+    let range = Nat.range(0, 2);
+    for (_unused in range) {
+      await placeOrderIfNotExists(level, price);
+    };
+  };
+
+  func placeOrdersInRange(grid : [(Side, Nat)], start : Nat, end : Nat, price : Nat) : async () {
+    // Place at most 3 orders in the given range
+    let rangeEnd = Nat.min(start + 3, end);
+    let range = Nat.range(start, rangeEnd);
+    for (i in range) {
+      await placeOrderIfNotExists(grid[i], price);
+    };
+  };
+
+  func placeOrderIfNotExists(level : (Side, Nat), _midPrice : Nat) : async () {
+    let newOrderId = createOrderId();
+
+    let price = level.1;
+    let quantity = calculateOrderQuantity(price);
     if (quantity == 0) {
-      addLogEntry("error", "Order quantity too small at current price: " # price.toText());
-      return #err("Order quantity too small at current price: " # price.toText());
+      addLogEntry("info", "Order quantity too small at current price: " # price.toText());
+      return;
+    };
+
+    let orderArgs : OrderArgs = {
+      price;
+      quantity;
+      side = level.0;
+      orderType = #limit;
     };
 
     let currentTimestamp = Time.now();
+    let entry = {
+      orderId = newOrderId;
+      side = level.0;
+      price;
+      quantity;
+      status = #open;
+      timestamp = currentTimestamp;
+    };
 
-    for ((side, price) in grid.values()) {
-      let orderArgs : OrderArgs = {
-        price;
-        quantity;
-        side;
-        orderType = #limit;
+    let placementResult = await placeOrderWithRetry(orderArgs, 3);
+    switch (placementResult) {
+      case (#ok(_)) {
+        openOrderMap.add(newOrderId, entry);
+        orderHistoryMap.add(newOrderId, entry);
+
+        let actionText = if (level.0 == #buy) { "Buy" } else { "Sell" };
+        let actionType = if (level.0 == #buy) { "buy_order_created" } else { "sell_order_created" };
+        addLogEntry(
+          actionType,
+          actionText # " Order Created at Price: " # price.toText() # ", Quantity: " # quantity.toText() # ", Successful"
+        );
       };
-
-      let orderId = createOrderId();
-      let entry = {
-        orderId;
-        side;
-        price;
-        quantity;
-        status = #open;
-        timestamp = currentTimestamp;
-      };
-
-      let placementResult = await placeOrderWithRetry(orderArgs, 3);
-      switch (placementResult) {
-        case (#ok(remoteOrderId)) {
-          orderHistoryMap.add(orderId, entry);
-          openOrderMap.add(orderId, entry);
-          addLogEntry(
-            "order_placed_success",
-            sideToText(side).toText() # " order placed at price: " # price.toText() # " with quantity: " # quantity.toText() # " (Remote Order ID: " # remoteOrderId.toText() # ")"
-          );
-        };
-        case (#err(detailedError)) {
-          addLogEntry(
-            "order_placement_failed",
-            "Failed to place " # sideToText(side) # " order at price: " # price.toText() # " (Attempted Order ID: " # orderId.toText() # "). Reason: " # detailedError
-          );
-        };
+      case (#err(err)) {
+        let actionText = if (level.0 == #buy) { "Buy" } else { "Sell" };
+        let actionType = if (level.0 == #buy) { "buy_order_creation_failed" } else { "sell_order_creation_failed" };
+        addLogEntry(
+          actionType, // Log both successes and failures
+          actionText # " Order Failed at Price: " # price.toText() # ", Quantity: " # quantity.toText() # ", Error: " # err
+        );
       };
     };
-    #ok;
   };
 
   func placeOrderWithRetry(
@@ -321,25 +384,16 @@ actor {
   ) : async { #ok : OrderId; #err : Text } {
     var attempts = 0;
     var lastError : Text = "";
-    try {
-      while (attempts < maxRetries) {
+    while (attempts < maxRetries) {
+      try {
         let remoteOrderId = await icDex.placeOrder(orderArgs);
         return #ok(remoteOrderId);
+      } catch (e : Error) {
+        lastError := "Attempt " # attempts.toText() # ": Error caught: " # e.message() # " ";
       };
-    } catch (e : Error) {
-      lastError := e.message();
+      attempts += 1;
     };
     #err("Failed to place order after " # maxRetries.toText() # " attempts. Last error: " # lastError);
-  };
-
-  public shared ({ caller }) func cancelOneOrderTest() : async () {
-    let orderId = 0;
-    await icDex.cancelOrder({ orderId });
-    addLogEntry("order_cancelled", "Cancelled order with ID: " # orderId.toText());
-  };
-
-  public query ({ caller }) func pending() : async [OrderEntry] {
-    openOrderMap.values().toArray();
   };
 
   func clearOpenOrders() {
@@ -347,9 +401,9 @@ actor {
   };
 
   public shared ({ caller }) func cancelAllOpenOrders() : async { #ok; #err : Text } {
-    try {
-      let openOrders = openOrderMap.values();
-      for (order in openOrders) {
+    let openOrders = openOrderMap.values();
+    for (order in openOrders) {
+      try {
         await icDex.cancelOrder({ orderId = order.orderId });
         let cancelledTimestamp = Time.now();
         let cancelledEntry = {
@@ -366,19 +420,67 @@ actor {
           "order_cancelled",
           "Cancelled order with ID: " # order.orderId.toText(),
         );
+      } catch (e : Error) {
+        addLogEntry("cancel_orders_error", "Error cancelling open orders: " # e.message());
+        return #err("Error cancelling open orders: " # e.message());
       };
-      #ok;
-    } catch (e : Error) {
-      addLogEntry("cancel_orders_error", "Error cancelling open orders: " # e.message());
-      #err("Error cancelling open orders: " # e.message());
+    };
+    #ok;
+  };
+
+  public shared ({ caller }) func cancelSingleOrder(orderId : Nat) : async { #ok; #err : Text } {
+    if (openOrderMap.containsKey(orderId)) {
+      let order = switch (openOrderMap.get(orderId)) {
+        case (null) { return #err("Order not found in local state") };
+        case (?order) { order };
+      };
+      try {
+        await icDex.cancelOrder({ orderId });
+        let cancelledTimestamp = Time.now();
+        let cancelledEntry = {
+          orderId;
+          side = order.side;
+          price = order.price;
+          quantity = order.quantity;
+          status = #cancelled;
+          timestamp = cancelledTimestamp;
+        };
+        orderHistoryMap.add(orderId, cancelledEntry);
+
+        openOrderMap.remove(orderId);
+        addLogEntry(
+          "order_cancelled",
+          "Cancelled order with ID: " # orderId.toText(),
+        );
+        #ok;
+      } catch (e : Error) {
+        addLogEntry("cancel_order_error", "Error cancelling order with ID " # orderId.toText() # ": " # e.message());
+        #err("Error cancelling order with ID " # orderId.toText() # ": " # e.message());
+      };
+    } else {
+      addLogEntry("cancel_order_error", "Order ID " # orderId.toText() # " not found in open orders");
+      #err("Order ID " # orderId.toText() # " not found in open orders");
     };
   };
 
   public query ({ caller }) func healthCheck() : async Bool {
     true;
   };
-  
+
   public query ({ caller }) func getOpenOrders() : async [OrderEntry] {
     openOrderMap.values().toVarArray<OrderEntry>().toArray();
+  };
+
+  // New function to fetch both balances at once and store the latest result
+  public shared ({ caller }) func getBalances() : async { icpBalance : Nat; ckbtcBalance : Nat } {
+    let icpBalance = await icpLedger.account_balance({
+      account = "asd34anv1230Xasd";
+    });
+    let ckbtcBalance = await ckbtcLedger.icrc1_balance_of({
+      account = "sadflasdnUber16cdaz";
+    });
+    let balances = { icpBalance = icpBalance.e8s; ckbtcBalance };
+    lastBalances := ?balances; // Store the latest result
+    balances;
   };
 };

@@ -6,6 +6,7 @@ import { GridPreviewTable } from './components/GridPreviewTable';
 import { OpenOrdersPanel } from './components/OpenOrdersPanel';
 import { TradeHistoryPanel } from './components/TradeHistoryPanel';
 import { ActivityLogPanel } from './components/ActivityLogPanel';
+import { BalancePanel } from './components/BalancePanel';
 
 function Header() {
     return (
@@ -23,9 +24,9 @@ function Header() {
                             </span>
                         </div>
                         <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded border border-border bg-muted/30">
-                            <span className="text-xs font-mono text-terminal-buy">ICP</span>
+                            <span className="text-xs font-mono text-terminal-buy">ckBTC</span>
                             <span className="text-xs font-mono text-muted-foreground">/</span>
-                            <span className="text-xs font-mono text-muted-foreground">ckUSDT</span>
+                            <span className="text-xs font-mono text-muted-foreground">ICP</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -35,7 +36,7 @@ function Header() {
                         </div>
                         <div className="flex items-center gap-1 px-2 py-0.5 rounded border border-border bg-muted/20">
                             <span className="text-[10px] font-mono text-muted-foreground">canister</span>
-                            <span className="text-[10px] font-mono text-terminal-buy/70">jgxow…cai</span>
+                            <span className="text-[10px] font-mono text-terminal-buy/70">5u2c6…cai</span>
                         </div>
                     </div>
                 </div>
@@ -52,7 +53,7 @@ function Footer() {
         <footer className="border-t border-border bg-card/50 mt-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-mono text-muted-foreground">
-                    <span>© {new Date().getFullYear()} ICDex Grid Bot — ICP/ckUSDT</span>
+                    <span>© {new Date().getFullYear()} ICDex Grid Bot — ckBTC/ICP</span>
                     <span className="flex items-center gap-1">
                         Built with{' '}
                         <Heart className="w-3 h-3 text-terminal-sell fill-terminal-sell mx-0.5" />
@@ -83,6 +84,11 @@ export default function App() {
                     <BotControlPanel />
                     <ConfigurationPanel />
                     <MarketDataPanel />
+                </div>
+
+                {/* Row 1b: Balances (full width on mobile, spans across on desktop) */}
+                <div className="mb-4">
+                    <BalancePanel />
                 </div>
 
                 {/* Row 2: Order Book + Open Orders */}

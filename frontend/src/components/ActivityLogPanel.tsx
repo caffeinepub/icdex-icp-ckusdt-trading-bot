@@ -10,24 +10,52 @@ function formatTimestamp(ns: bigint): string {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 }
 
-function eventColor(eventType: string): string {
-    if (eventType === 'order_placed') return 'text-buy';
-    if (eventType === 'order_cancelled') return 'text-sell';
-    if (eventType === 'bot_started') return 'text-warning';
+function eventColor(eventType: string, message: string): string {
+    // Check for order error tag in message first (highest priority)
+    if (message.includes('[ORDER_ERROR]') || eventType.includes('order_error')) {
+        return 'text-destructive';
+    }
+    // Check for failure/error event types
+    if (
+        eventType === 'buy_order_creation_failed' ||
+        eventType === 'sell_order_creation_failed' ||
+        eventType === 'cancel_orders_error' ||
+        eventType === 'cancel_order_error' ||
+        eventType === 'error'
+    ) {
+        return 'text-destructive';
+    }
+    if (eventType === 'order_placed' || eventType === 'buy_order_created' || eventType === 'sell_order_created') {
+        return 'text-terminal-buy';
+    }
+    if (eventType === 'order_cancelled') return 'text-terminal-sell';
+    if (eventType === 'bot_started') return 'text-terminal-warning';
     if (eventType === 'bot_stopped') return 'text-muted-foreground';
-    if (eventType === 'error') return 'text-destructive';
     return 'text-foreground';
 }
 
 function LogRow({ entry }: { entry: LogEntry }) {
+    const isOrderError =
+        entry.message.includes('[ORDER_ERROR]') ||
+        entry.eventType.includes('order_error') ||
+        entry.eventType === 'buy_order_creation_failed' ||
+        entry.eventType === 'sell_order_creation_failed';
+
     return (
-        <div className="flex items-start gap-3 py-1.5 border-b border-border/30 last:border-0">
+        <div className={`flex items-start gap-3 py-1.5 border-b border-border/30 last:border-0 ${isOrderError ? 'bg-destructive/5' : ''}`}>
             <span className="shrink-0 text-xs font-mono text-muted-foreground tabular-nums pt-px">
                 {formatTimestamp(entry.timestamp)}
             </span>
-            <span className={`text-xs font-mono leading-relaxed ${eventColor(entry.eventType)}`}>
-                {entry.message}
-            </span>
+            <div className="flex items-start gap-1.5 min-w-0">
+                {isOrderError && (
+                    <span className="shrink-0 text-[9px] font-mono font-bold text-destructive bg-destructive/10 border border-destructive/30 rounded px-1 py-0.5 mt-px leading-none">
+                        ERR
+                    </span>
+                )}
+                <span className={`text-xs font-mono leading-relaxed break-all ${eventColor(entry.eventType, entry.message)}`}>
+                    {entry.message}
+                </span>
+            </div>
         </div>
     );
 }

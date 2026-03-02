@@ -6,8 +6,9 @@ import type { LogEntry, OrderEntry } from '@/backend';
 
 export interface BotConfig {
     intervalSeconds: bigint;
-    spreadBps: bigint;
+    spreadPips: bigint;
     numOrders: bigint;
+    orderSize: bigint;
 }
 
 export interface MarketData {
@@ -20,11 +21,16 @@ export interface MarketData {
     source: 'grid' | 'empty';
 }
 
+export interface Balances {
+    icpBalance: bigint;
+    ckbtcBalance: bigint;
+}
+
 // ─── Actor interface matching backend/main.mo ─────────────────────────────────
 
 interface TradingBotActor {
     getBotStatus(): Promise<boolean>;
-    getConfig(): Promise<{ intervalSeconds: bigint; spreadBps: bigint; numOrders: bigint }>;
+    getConfig(): Promise<{ intervalSeconds: bigint; spreadPips: bigint; numOrders: bigint; orderSize: bigint }>;
     getLastGrid(): Promise<Array<[string, bigint]>>;
     getTradeHistory(): Promise<Array<OrderEntry>>;
     getActivityLog(count: bigint, page: bigint): Promise<Array<LogEntry>>;
@@ -32,13 +38,16 @@ interface TradingBotActor {
     getOpenOrders(): Promise<Array<OrderEntry>>;
     startBot(): Promise<void>;
     stopBot(): Promise<void>;
+    updateConfig(newInterval: bigint, newSpread: bigint, newOrders: bigint, newOrderSize: bigint): Promise<void>;
     cancelAllOpenOrders(): Promise<void>;
     cancelOneOrderTest(): Promise<void>;
     healthCheck(): Promise<boolean>;
+    getBalances(): Promise<{ icpBalance: bigint; ckbtcBalance: bigint }>;
 }
 
 const POLL_FAST = 5_000;
 const POLL_SLOW = 15_000;
+const POLL_BALANCES = 30_000;
 
 // ─── Helper: detect IC0508 (canister stopped) errors ─────────────────────────
 
@@ -66,7 +75,6 @@ async function runHealthCheck(actor: TradingBotActor): Promise<void> {
         if (err instanceof Error && err.message.includes('not reachable')) {
             throw err;
         }
-        // healthCheck itself threw — canister is unreachable
         throw new Error('The canister is not reachable. Please try again later.');
     }
 }
@@ -105,6 +113,35 @@ export function useBotConfig() {
     });
 }
 
+// ─── Update Config ────────────────────────────────────────────────────────────
+
+export function useUpdateConfig() {
+    const { actor } = useActor();
+    const tradingActor = actor as unknown as TradingBotActor | null;
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (config: {
+            spreadPips: number;
+            numOrders: number;
+            intervalSeconds: number;
+            orderSize: number;
+        }) => {
+            if (!tradingActor) throw new Error('Actor not initialized');
+            await tradingActor.updateConfig(
+                BigInt(config.intervalSeconds),
+                BigInt(config.spreadPips),
+                BigInt(config.numOrders),
+                BigInt(config.orderSize),
+            );
+            return config;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['botConfig'] });
+            queryClient.invalidateQueries({ queryKey: ['activityLog'] });
+        },
+    });
+}
+
 // ─── Start Bot ────────────────────────────────────────────────────────────────
 
 export function useStartBot() {
@@ -114,10 +151,7 @@ export function useStartBot() {
     return useMutation({
         mutationFn: async () => {
             if (!tradingActor) throw new Error('Actor not initialized');
-
-            // Pre-check: verify canister is reachable before attempting startBot
             await runHealthCheck(tradingActor);
-
             try {
                 return await tradingActor.startBot();
             } catch (err) {
@@ -143,10 +177,7 @@ export function useStopBot() {
     return useMutation({
         mutationFn: async () => {
             if (!tradingActor) throw new Error('Actor not initialized');
-
-            // Pre-check: verify canister is reachable before attempting stopBot
             await runHealthCheck(tradingActor);
-
             try {
                 return await tradingActor.stopBot();
             } catch (err) {
@@ -159,7 +190,6 @@ export function useStopBot() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['botStatus'] });
             queryClient.invalidateQueries({ queryKey: ['activityLog'] });
-            // Force immediate refetch of open orders and trade history after stop
             queryClient.refetchQueries({ queryKey: ['openOrders'] });
             queryClient.refetchQueries({ queryKey: ['tradeHistory'] });
             queryClient.refetchQueries({ queryKey: ['lastGrid'] });
@@ -180,11 +210,9 @@ export function useCancelAllOrders() {
             return tradingActor.cancelAllOpenOrders();
         },
         onSuccess: () => {
-            // Invalidate stale data and immediately refetch to reflect cleared orders
             queryClient.invalidateQueries({ queryKey: ['openOrders'] });
             queryClient.invalidateQueries({ queryKey: ['tradeHistory'] });
             queryClient.invalidateQueries({ queryKey: ['activityLog'] });
-            // Force immediate refetch so UI clears without waiting for next poll
             queryClient.refetchQueries({ queryKey: ['openOrders'] });
             queryClient.refetchQueries({ queryKey: ['tradeHistory'] });
             queryClient.refetchQueries({ queryKey: ['activityLog'] });
@@ -203,7 +231,6 @@ export function useLastGrid() {
         queryFn: async () => {
             if (!tradingActor) throw new Error('Actor not ready');
             const result = await tradingActor.getLastGrid();
-            // Always return the array (may be empty if no grid has been generated yet)
             return result ?? [];
         },
         enabled: !!actor && !isFetching,
@@ -226,7 +253,6 @@ export function useMarketData() {
         queryFn: async (): Promise<MarketData> => {
             if (!tradingActor) throw new Error('Actor not ready');
 
-            // Fetch the last grid from the backend
             const grid = await tradingActor.getLastGrid();
 
             if (!grid || grid.length === 0) {
@@ -262,7 +288,6 @@ export function useMarketData() {
             };
         },
         enabled: !!actor && !isFetching,
-        // Poll faster when bot is running or when we have no data yet (to catch first cycle)
         refetchInterval: isRunning ? POLL_FAST : POLL_SLOW,
         retry: 3,
         retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
@@ -327,5 +352,27 @@ export function useActivityLog(count = 50, page = 0) {
         enabled: !!actor && !isFetching,
         refetchInterval: POLL_FAST,
         retry: 2,
+    });
+}
+
+// ─── Balances (ICP + ckBTC) ───────────────────────────────────────────────────
+
+export function useBalances() {
+    const { actor, isFetching } = useActor();
+    const tradingActor = actor as unknown as TradingBotActor | null;
+    return useQuery<Balances>({
+        queryKey: ['balances'],
+        queryFn: async () => {
+            if (!tradingActor) throw new Error('Actor not ready');
+            const result = await tradingActor.getBalances();
+            return {
+                icpBalance: result.icpBalance,
+                ckbtcBalance: result.ckbtcBalance,
+            };
+        },
+        enabled: !!actor && !isFetching,
+        refetchInterval: POLL_BALANCES,
+        retry: 2,
+        staleTime: 20_000,
     });
 }

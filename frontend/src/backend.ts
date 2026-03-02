@@ -121,21 +121,32 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
-    cancelOneOrderTest(): Promise<void>;
+    cancelSingleOrder(orderId: bigint): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getActivityLog(count: bigint, page: bigint): Promise<Array<LogEntry>>;
+    getBalances(): Promise<{
+        icpBalance: bigint;
+        ckbtcBalance: bigint;
+    }>;
     getBotStatus(): Promise<boolean>;
     getConfig(): Promise<{
+        spreadPips: bigint;
+        orderSize: bigint;
         intervalSeconds: bigint;
-        spreadBps: bigint;
         numOrders: bigint;
     }>;
     getLastGrid(): Promise<Array<[string, bigint]>>;
     getOpenOrders(): Promise<Array<OrderEntry>>;
     getTradeHistory(): Promise<Array<OrderEntry>>;
     healthCheck(): Promise<boolean>;
-    pending(): Promise<Array<OrderEntry>>;
     startBot(): Promise<void>;
     stopBot(): Promise<void>;
+    updateConfig(newInterval: bigint, newSpread: bigint, newOrders: bigint, newOrderSize: bigint): Promise<void>;
 }
 import type { OrderEntry as _OrderEntry, OrderId as _OrderId, OrderStatus as _OrderStatus, Side as _Side, Time as _Time } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -160,18 +171,24 @@ export class Backend implements backendInterface {
             return from_candid_variant_n1(this._uploadFile, this._downloadFile, result);
         }
     }
-    async cancelOneOrderTest(): Promise<void> {
+    async cancelSingleOrder(arg0: bigint): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
         if (this.processError) {
             try {
-                const result = await this.actor.cancelOneOrderTest();
-                return result;
+                const result = await this.actor.cancelSingleOrder(arg0);
+                return from_candid_variant_n1(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.cancelOneOrderTest();
-            return result;
+            const result = await this.actor.cancelSingleOrder(arg0);
+            return from_candid_variant_n1(this._uploadFile, this._downloadFile, result);
         }
     }
     async getActivityLog(arg0: bigint, arg1: bigint): Promise<Array<LogEntry>> {
@@ -185,6 +202,23 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getActivityLog(arg0, arg1);
+            return result;
+        }
+    }
+    async getBalances(): Promise<{
+        icpBalance: bigint;
+        ckbtcBalance: bigint;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getBalances();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getBalances();
             return result;
         }
     }
@@ -203,8 +237,9 @@ export class Backend implements backendInterface {
         }
     }
     async getConfig(): Promise<{
+        spreadPips: bigint;
+        orderSize: bigint;
         intervalSeconds: bigint;
-        spreadBps: bigint;
         numOrders: bigint;
     }> {
         if (this.processError) {
@@ -276,20 +311,6 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async pending(): Promise<Array<OrderEntry>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.pending();
-                return from_candid_vec_n2(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.pending();
-            return from_candid_vec_n2(this._uploadFile, this._downloadFile, result);
-        }
-    }
     async startBot(): Promise<void> {
         if (this.processError) {
             try {
@@ -315,6 +336,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.stopBot();
+            return result;
+        }
+    }
+    async updateConfig(arg0: bigint, arg1: bigint, arg2: bigint, arg3: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateConfig(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateConfig(arg0, arg1, arg2, arg3);
             return result;
         }
     }

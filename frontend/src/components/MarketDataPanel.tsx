@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, RefreshCw, Info } from 'lucide-react';
 import { useMarketData, useBotStatus } from '@/hooks/useQueries';
 
+/**
+ * Format a bigint price value (stored as e8s) as ICP per ckBTC.
+ * Always shows 8 decimal places to match the ICP/ckBTC price range (~0.00020).
+ */
 function formatPrice(value: bigint): string {
     const n = Number(value) / 1e8;
     if (n === 0) return '—';
-    if (n >= 1000) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    if (n >= 1) return n.toFixed(4);
     return n.toFixed(8);
 }
 
@@ -73,6 +75,11 @@ export function MarketDataPanel() {
           })()
         : null;
 
+    // Compute spread in pips (1 pip = 0.000001 ICP/ckBTC)
+    const spreadPips = bestBid !== null && bestAsk !== null && bestAsk > bestBid
+        ? Math.round(Number(bestAsk - bestBid) / 1e8 / 0.000001)
+        : null;
+
     return (
         <div className={`terminal-card p-5 flex flex-col gap-4 border ${borderClass} transition-colors duration-500`}>
             {/* Header */}
@@ -111,91 +118,95 @@ export function MarketDataPanel() {
                     <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                     <span>
                         {isRunning
-                            ? 'Waiting for first trading cycle to complete…'
-                            : 'Start the bot to fetch live market prices from ICDex.'}
+                            ? 'Waiting for first bot cycle to populate market data…'
+                            : 'Start the bot to begin fetching ICP/ckBTC market data.'}
                     </span>
                 </div>
             )}
 
-            {/* Mid Price */}
-            <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
-                    Mid Price (ICP/ckUSDT)
-                </span>
-                {isLoading ? (
-                    <div className="h-8 w-32 bg-muted rounded animate-pulse" />
-                ) : (
-                    <span className={`text-2xl font-mono font-bold tabular-nums ${hasData ? 'text-foreground' : 'text-muted-foreground'}`}>
-                        {hasData && midPrice ? formatPrice(midPrice) : '—'}
+            {/* Loading skeleton */}
+            {isLoading && !hasData && (
+                <div className="flex flex-col gap-3">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex justify-between items-center">
+                            <div className="h-3 w-20 bg-muted rounded animate-pulse" />
+                            <div className="h-4 w-28 bg-muted rounded animate-pulse" />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Mid price — primary display */}
+            {hasData && midPrice !== null && (
+                <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                        Mid Price <span className="opacity-60">(ICP/ckBTC)</span>
                     </span>
+                    <span className="text-2xl font-mono font-bold text-foreground tabular-nums tracking-tight">
+                        {formatPrice(midPrice)}
+                    </span>
+                    {ageMs !== null && (
+                        <span className="text-[10px] font-mono text-muted-foreground opacity-60">
+                            {relativeTime(dataUpdatedAt ?? 0)}
+                        </span>
+                    )}
+                </div>
+            )}
+
+            {/* Bid / Ask / Spread */}
+            {hasData && (
+                <div className="flex flex-col gap-2 border-t border-border pt-3">
+                    <div className="flex justify-between items-center">
+                        <span className="text-[11px] font-mono text-muted-foreground">
+                            Best Bid <span className="opacity-60">(ICP)</span>
+                        </span>
+                        <span className="text-sm font-mono text-terminal-buy tabular-nums">
+                            {bestBid !== null ? formatPrice(bestBid) : '—'}
+                        </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-[11px] font-mono text-muted-foreground">
+                            Best Ask <span className="opacity-60">(ICP)</span>
+                        </span>
+                        <span className="text-sm font-mono text-terminal-sell tabular-nums">
+                            {bestAsk !== null ? formatPrice(bestAsk) : '—'}
+                        </span>
+                    </div>
+                    {spreadPips !== null && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-[11px] font-mono text-muted-foreground">
+                                Spread
+                            </span>
+                            <span className="text-sm font-mono text-muted-foreground tabular-nums">
+                                {spreadPips} <span className="text-[10px] opacity-60">pips</span>
+                            </span>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Grid level counts */}
+            {hasData && (buyLevels > 0 || sellLevels > 0) && (
+                <div className="flex gap-3 border-t border-border pt-3">
+                    <div className="flex-1 flex flex-col items-center gap-0.5 bg-terminal-buy/5 border border-terminal-buy/20 rounded px-2 py-1.5">
+                        <span className="text-[10px] font-mono text-muted-foreground">BUY LEVELS</span>
+                        <span className="text-base font-mono font-bold text-terminal-buy">{buyLevels}</span>
+                    </div>
+                    <div className="flex-1 flex flex-col items-center gap-0.5 bg-terminal-sell/5 border border-terminal-sell/20 rounded px-2 py-1.5">
+                        <span className="text-[10px] font-mono text-muted-foreground">SELL LEVELS</span>
+                        <span className="text-base font-mono font-bold text-terminal-sell">{sellLevels}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Footer: canister source */}
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground opacity-50 pt-1 border-t border-border">
+                <span>Source: ICDex</span>
+                <span className="opacity-60">·</span>
+                <span>5u2c6…cai</span>
+                {isFetching && !isLoading && (
+                    <span className="ml-auto animate-pulse">↻</span>
                 )}
-                {dataUpdatedAt && hasData && (
-                    <span className="text-[10px] font-mono text-muted-foreground opacity-60">
-                        updated {relativeTime(dataUpdatedAt)}
-                    </span>
-                )}
-            </div>
-
-            {/* Bid / Ask */}
-            <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
-                    <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
-                        Best Bid
-                    </span>
-                    {isLoading ? (
-                        <div className="h-4 w-20 bg-muted rounded animate-pulse" />
-                    ) : (
-                        <span className={`text-sm font-mono font-semibold tabular-nums ${bestBid ? 'text-terminal-buy' : 'text-muted-foreground'}`}>
-                            {bestBid ? formatPrice(bestBid) : '—'}
-                        </span>
-                    )}
-                </div>
-                <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
-                    <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
-                        Best Ask
-                    </span>
-                    {isLoading ? (
-                        <div className="h-4 w-20 bg-muted rounded animate-pulse" />
-                    ) : (
-                        <span className={`text-sm font-mono font-semibold tabular-nums ${bestAsk ? 'text-terminal-sell' : 'text-muted-foreground'}`}>
-                            {bestAsk ? formatPrice(bestAsk) : '—'}
-                        </span>
-                    )}
-                </div>
-            </div>
-
-            {/* Level counts */}
-            <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
-                    <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
-                        Buy Levels
-                    </span>
-                    {isLoading ? (
-                        <div className="h-4 w-8 bg-muted rounded animate-pulse" />
-                    ) : (
-                        <span className={`text-sm font-mono font-semibold ${buyLevels > 0 ? 'text-terminal-buy' : 'text-muted-foreground'}`}>
-                            {buyLevels}
-                        </span>
-                    )}
-                </div>
-                <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
-                    <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
-                        Sell Levels
-                    </span>
-                    {isLoading ? (
-                        <div className="h-4 w-8 bg-muted rounded animate-pulse" />
-                    ) : (
-                        <span className={`text-sm font-mono font-semibold ${sellLevels > 0 ? 'text-terminal-sell' : 'text-muted-foreground'}`}>
-                            {sellLevels}
-                        </span>
-                    )}
-                </div>
-            </div>
-
-            {/* Pair info */}
-            <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground pt-1 border-t border-border">
-                <span>ICP / ckUSDT</span>
-                <span className="opacity-60">ICDex · jgxow…cai</span>
             </div>
         </div>
     );

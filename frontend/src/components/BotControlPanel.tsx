@@ -6,6 +6,7 @@ import {
     Loader2,
     Zap,
     WifiOff,
+    RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -61,7 +62,7 @@ export function BotControlPanel() {
                     <Activity className="w-4 h-4 text-muted-foreground" />
                     <span className="terminal-label">Bot Control</span>
                 </div>
-                <span className="text-xs font-mono text-muted-foreground">ICP/ckUSDT</span>
+                <span className="text-xs font-mono text-muted-foreground">ckBTC/ICP</span>
             </div>
 
             {/* Status */}
@@ -99,87 +100,129 @@ export function BotControlPanel() {
                 )}
             </div>
 
-            {/* Config summary */}
+            {/* Config summary — shows loop-active state when bot is running */}
             {config && (
-                <div className="grid grid-cols-3 gap-2">
-                    <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
-                        <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
-                            Spread
-                        </span>
-                        <span className="text-sm font-mono font-semibold text-foreground">
-                            {Number(config.spreadBps)} bps
-                        </span>
+                botRunning ? (
+                    <div className="flex flex-col gap-2">
+                        {/* Loop active banner */}
+                        <div className="flex items-center gap-2.5 py-2.5 px-3 rounded bg-terminal-buy/10 border border-terminal-buy/30">
+                            <span className="relative flex h-2 w-2 shrink-0">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-terminal-buy opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-terminal-buy" />
+                            </span>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-mono font-semibold text-terminal-buy tracking-wide">
+                                    Loop active – orders syncing
+                                </span>
+                                <span className="text-[10px] font-mono text-terminal-buy/60 truncate">
+                                    Reconciling grid every {Number(config.intervalSeconds)}s · {Number(config.numOrders)} levels · {Number(config.orderSize)} ICP/order
+                                </span>
+                            </div>
+                            <RefreshCw className="w-3 h-3 text-terminal-buy/50 animate-spin ml-auto shrink-0" style={{ animationDuration: '3s' }} />
+                        </div>
+
+                        {/* Compact config stats */}
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
+                                <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+                                    Spread
+                                </span>
+                                <span className="text-sm font-mono font-semibold text-foreground">
+                                    {Number(config.spreadPips)} pips
+                                </span>
+                            </div>
+                            <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
+                                <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+                                    Orders
+                                </span>
+                                <span className="text-sm font-mono font-semibold text-foreground">
+                                    {Number(config.numOrders)}
+                                </span>
+                            </div>
+                            <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
+                                <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+                                    Size
+                                </span>
+                                <span className="text-sm font-mono font-semibold text-foreground">
+                                    {Number(config.orderSize)} ICP
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
-                        <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
-                            Orders
-                        </span>
-                        <span className="text-sm font-mono font-semibold text-foreground">
-                            {Number(config.numOrders)}
-                        </span>
+                ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
+                            <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+                                Spread
+                            </span>
+                            <span className="text-sm font-mono font-semibold text-foreground">
+                                {Number(config.spreadPips)} pips
+                            </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
+                            <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+                                Orders
+                            </span>
+                            <span className="text-sm font-mono font-semibold text-foreground">
+                                {Number(config.numOrders)}
+                            </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
+                            <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+                                Interval
+                            </span>
+                            <span className="text-sm font-mono font-semibold text-foreground">
+                                {Number(config.intervalSeconds)}s
+                            </span>
+                        </div>
                     </div>
-                    <div className="flex flex-col gap-0.5 py-2 px-3 rounded bg-muted/20 border border-border/60">
-                        <span className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
-                            Interval
-                        </span>
-                        <span className="text-sm font-mono font-semibold text-foreground">
-                            {Number(config.intervalSeconds)}s
-                        </span>
-                    </div>
-                </div>
+                )
             )}
 
             {/* Action error */}
             {errorMessage && (
-                <div className="flex items-start gap-2 text-xs font-mono text-terminal-sell bg-terminal-sell/5 border border-terminal-sell/25 rounded px-3 py-2">
+                <div className="flex items-start gap-2 py-2 px-3 rounded bg-terminal-sell/10 border border-terminal-sell/30">
                     {isNotReachable ? (
-                        <WifiOff className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                        <WifiOff className="w-4 h-4 text-terminal-sell shrink-0 mt-0.5" />
                     ) : (
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                        <AlertCircle className="w-4 h-4 text-terminal-sell shrink-0 mt-0.5" />
                     )}
-                    <span className="break-words">{errorMessage}</span>
+                    <span className="text-xs font-mono text-terminal-sell leading-relaxed">
+                        {errorMessage}
+                    </span>
                 </div>
             )}
 
-            {/* Buttons */}
-            <div className="flex flex-col gap-2">
-                {!botRunning ? (
-                    <Button
-                        onClick={handleStart}
-                        disabled={isPending || statusLoading}
-                        className="w-full font-mono text-xs tracking-widest uppercase bg-terminal-buy/15 text-terminal-buy border border-terminal-buy/40 hover:bg-terminal-buy/25 disabled:opacity-40"
-                        variant="outline"
-                        size="sm"
-                    >
-                        {startBot.isPending ? (
-                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                        ) : (
-                            <Play className="w-3.5 h-3.5 mr-1.5" />
-                        )}
-                        Start Bot
-                    </Button>
-                ) : (
-                    <Button
-                        onClick={handleStop}
-                        disabled={isPending || statusLoading}
-                        className="w-full font-mono text-xs tracking-widest uppercase bg-terminal-sell/15 text-terminal-sell border border-terminal-sell/40 hover:bg-terminal-sell/25 disabled:opacity-40"
-                        variant="outline"
-                        size="sm"
-                    >
-                        {stopBot.isPending ? (
-                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                        ) : (
-                            <Square className="w-3.5 h-3.5 mr-1.5" />
-                        )}
-                        Stop Bot
-                    </Button>
-                )}
-            </div>
-
-            {/* ICDex info */}
-            <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground opacity-60 pt-1 border-t border-border">
-                <span className="w-1.5 h-1.5 rounded-full bg-terminal-buy/60" />
-                <span>Orders placed on ICDex canister jgxow…cai</span>
+            {/* Action buttons */}
+            <div className="flex gap-2 mt-auto">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 font-mono text-xs border-terminal-buy/40 text-terminal-buy hover:bg-terminal-buy/10 hover:border-terminal-buy disabled:opacity-40"
+                    onClick={handleStart}
+                    disabled={botRunning || isPending || statusLoading}
+                >
+                    {startBot.isPending ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                    ) : (
+                        <Play className="w-3.5 h-3.5 mr-1.5" />
+                    )}
+                    Start
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 font-mono text-xs border-terminal-sell/40 text-terminal-sell hover:bg-terminal-sell/10 hover:border-terminal-sell disabled:opacity-40"
+                    onClick={handleStop}
+                    disabled={!botRunning || isPending || statusLoading}
+                >
+                    {stopBot.isPending ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                    ) : (
+                        <Square className="w-3.5 h-3.5 mr-1.5" />
+                    )}
+                    Stop
+                </Button>
             </div>
         </div>
     );

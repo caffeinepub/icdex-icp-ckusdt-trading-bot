@@ -36,19 +36,29 @@ export const idlService = IDL.Service({
       [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
       [],
     ),
-  'cancelOneOrderTest' : IDL.Func([], [], []),
+  'cancelSingleOrder' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
   'getActivityLog' : IDL.Func(
       [IDL.Nat, IDL.Nat],
       [IDL.Vec(LogEntry)],
       ['query'],
+    ),
+  'getBalances' : IDL.Func(
+      [],
+      [IDL.Record({ 'icpBalance' : IDL.Nat, 'ckbtcBalance' : IDL.Nat })],
+      [],
     ),
   'getBotStatus' : IDL.Func([], [IDL.Bool], ['query']),
   'getConfig' : IDL.Func(
       [],
       [
         IDL.Record({
+          'spreadPips' : IDL.Nat,
+          'orderSize' : IDL.Nat,
           'intervalSeconds' : IDL.Nat,
-          'spreadBps' : IDL.Nat,
           'numOrders' : IDL.Nat,
         }),
       ],
@@ -62,9 +72,9 @@ export const idlService = IDL.Service({
   'getOpenOrders' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
   'getTradeHistory' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
   'healthCheck' : IDL.Func([], [IDL.Bool], ['query']),
-  'pending' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
   'startBot' : IDL.Func([], [], []),
   'stopBot' : IDL.Func([], [], []),
+  'updateConfig' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat], [], []),
 });
 
 export const idlInitArgs = [];
@@ -98,19 +108,29 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
         [],
       ),
-    'cancelOneOrderTest' : IDL.Func([], [], []),
+    'cancelSingleOrder' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
     'getActivityLog' : IDL.Func(
         [IDL.Nat, IDL.Nat],
         [IDL.Vec(LogEntry)],
         ['query'],
+      ),
+    'getBalances' : IDL.Func(
+        [],
+        [IDL.Record({ 'icpBalance' : IDL.Nat, 'ckbtcBalance' : IDL.Nat })],
+        [],
       ),
     'getBotStatus' : IDL.Func([], [IDL.Bool], ['query']),
     'getConfig' : IDL.Func(
         [],
         [
           IDL.Record({
+            'spreadPips' : IDL.Nat,
+            'orderSize' : IDL.Nat,
             'intervalSeconds' : IDL.Nat,
-            'spreadBps' : IDL.Nat,
             'numOrders' : IDL.Nat,
           }),
         ],
@@ -124,9 +144,9 @@ export const idlFactory = ({ IDL }) => {
     'getOpenOrders' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
     'getTradeHistory' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
     'healthCheck' : IDL.Func([], [IDL.Bool], ['query']),
-    'pending' : IDL.Func([], [IDL.Vec(OrderEntry)], ['query']),
     'startBot' : IDL.Func([], [], []),
     'stopBot' : IDL.Func([], [], []),
+    'updateConfig' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat], [], []),
   });
 };
 

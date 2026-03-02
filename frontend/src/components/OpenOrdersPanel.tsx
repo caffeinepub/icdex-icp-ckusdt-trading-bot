@@ -6,18 +6,24 @@ import { Button } from '@/components/ui/button';
 import type { OrderEntry } from '@/backend';
 import { Side } from '@/backend';
 
+/**
+ * Format a bigint price value (stored as e8s) as ICP per ckBTC.
+ * Always shows at least 4 decimal places for ICP-denominated prices.
+ */
 function formatPrice(value: bigint): string {
     const n = Number(value) / 1e8;
-    if (n === 0) return '0';
-    if (n >= 1000) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (n === 0) return '0.0000';
+    if (n >= 10_000) return n.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
     if (n >= 1) return n.toFixed(4);
     return n.toFixed(8);
 }
 
+/**
+ * Format a bigint quantity value (stored as e8s) as ckBTC with 8 decimal places.
+ */
 function formatQty(value: bigint): string {
     const n = Number(value) / 1e8;
-    if (n === 0) return '0';
-    if (n >= 0.01) return n.toFixed(4);
+    if (n === 0) return '0.00000000';
     return n.toFixed(8);
 }
 
@@ -215,8 +221,8 @@ export function OpenOrdersPanel() {
                         <div className="grid grid-cols-[2.5rem_3rem_1fr_1fr_3.5rem] gap-2 px-3 py-1.5 border-b border-border sticky top-0 bg-card z-10">
                             <span className="text-[10px] font-mono text-muted-foreground">#</span>
                             <span className="text-[10px] font-mono text-muted-foreground">SIDE</span>
-                            <span className="text-[10px] font-mono text-muted-foreground text-right">PRICE (ckUSDT)</span>
-                            <span className="text-[10px] font-mono text-muted-foreground text-right">QTY (ICP)</span>
+                            <span className="text-[10px] font-mono text-muted-foreground text-right">PRICE (ICP)</span>
+                            <span className="text-[10px] font-mono text-muted-foreground text-right">QTY (ckBTC)</span>
                             <span className="text-[10px] font-mono text-muted-foreground text-right">TIME</span>
                         </div>
                         {sortedOrders.map((order, i) => (
@@ -231,7 +237,7 @@ export function OpenOrdersPanel() {
                     <div className="flex flex-col gap-1">
                         <span className="text-sm font-mono text-muted-foreground">No open orders</span>
                         <span className="text-xs font-mono text-muted-foreground opacity-60 max-w-[200px]">
-                            Active orders will appear here when the bot places them
+                            Active ckBTC/ICP orders will appear here when the bot places them
                         </span>
                     </div>
                     {isFetching && (
@@ -247,8 +253,8 @@ export function OpenOrdersPanel() {
                     <div className="grid grid-cols-[2.5rem_3rem_1fr_1fr_3.5rem] gap-2 px-3 py-1.5 border-b border-border sticky top-0 bg-card z-10">
                         <span className="text-[10px] font-mono text-muted-foreground">#</span>
                         <span className="text-[10px] font-mono text-muted-foreground">SIDE</span>
-                        <span className="text-[10px] font-mono text-muted-foreground text-right">PRICE (ckUSDT)</span>
-                        <span className="text-[10px] font-mono text-muted-foreground text-right">QTY (ICP)</span>
+                        <span className="text-[10px] font-mono text-muted-foreground text-right">PRICE (ICP)</span>
+                        <span className="text-[10px] font-mono text-muted-foreground text-right">QTY (ckBTC)</span>
                         <span className="text-[10px] font-mono text-muted-foreground text-right">TIME</span>
                     </div>
                     {sortedOrders.map((order, i) => (

@@ -1,6 +1,80 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix grid bot not placing buy/sell orders after cancellation",
-  "requirements": []
+  "title": "Code review: fix inconsistencies and remove dead code",
+  "requirements": [
+    {
+      "id": "REQ-3",
+      "summary": "Audit all frontend source files for unused imports, unused state variables, dead components, duplicate logic, and inconsistent naming conventions. Remove or reconcile anything that is not referenced or contradictory.",
+      "acceptanceCriteria": [
+        "No unused React imports or variables remain across components and hooks",
+        "No component or hook file is imported but never used",
+        "Naming conventions are consistent (camelCase for variables/functions, PascalCase for components)",
+        "No duplicate query keys or redundant fetch logic in useQueries.ts",
+        "All existing UI panels render correctly after cleanup"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Remove any unused imports, unused state variables, or dead conditional branches. Verify all imported components are actually rendered. Ensure consistent naming conventions for variables and functions (camelCase)."
+        },
+        {
+          "path": "frontend/src/components/ActivityLogPanel.tsx",
+          "operation": "modify",
+          "description": "Clean up unused imports (React hooks, utility functions), remove any unused local variables or dead code paths. Verify error handling logic is reachable and consistent. Ensure naming follows camelCase for variables/functions."
+        },
+        {
+          "path": "frontend/src/components/BalancePanel.tsx",
+          "operation": "modify",
+          "description": "Remove unused imports and any unreferenced state variables. Clean up redundant conditional checks or dead code branches. Verify manual refresh button logic is complete and error states are properly handled."
+        },
+        {
+          "path": "frontend/src/components/BotControlPanel.tsx",
+          "operation": "modify",
+          "description": "Audit for unused imports, particularly any React hooks or utilities not actually used. Remove dead code branches and ensure all imported query/mutation hooks are invoked. Verify naming consistency."
+        },
+        {
+          "path": "frontend/src/components/ConfigurationPanel.tsx",
+          "operation": "modify",
+          "description": "Remove unused imports, unused form state variables, or redundant validation logic. Clean up any stale comments or dead code paths in form submission handlers. Ensure consistent camelCase naming."
+        },
+        {
+          "path": "frontend/src/components/GridPreviewTable.tsx",
+          "operation": "modify",
+          "description": "Remove unused imports and any unreferenced calculation variables. Clean up redundant mapping or filtering logic. Verify all highlighting logic is reachable and remove any dead conditional branches."
+        },
+        {
+          "path": "frontend/src/components/MarketDataPanel.tsx",
+          "operation": "modify",
+          "description": "Audit for unused imports (date utilities, formatting helpers) and remove any dead code. Clean up redundant staleness checks or unreachable error branches. Ensure naming conventions are consistent."
+        },
+        {
+          "path": "frontend/src/components/OpenOrdersPanel.tsx",
+          "operation": "modify",
+          "description": "Remove unused imports and any unreferenced state or effect hooks. Clean up duplicate formatting logic and ensure all error/loading states are reachable. Verify cancel-all button logic is complete."
+        },
+        {
+          "path": "frontend/src/components/TradeHistoryPanel.tsx",
+          "operation": "modify",
+          "description": "Remove unused imports, particularly any formatting utilities or React hooks not actually invoked. Clean up dead code in status rendering logic and ensure naming consistency (camelCase for variables)."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit for duplicate query keys, redundant fetch logic, or unused query options. Remove any unreferenced imports or dead helper functions. Ensure all mutations properly invalidate related queries without redundancy. Verify naming is consistent (camelCase for hook functions)."
+        },
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Remove any unused CSS custom properties, unreferenced utility classes, or stale comments. Verify all defined color tokens and keyframes are actually used in components or Tailwind config."
+        },
+        {
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Remove any unused theme extensions (colors, fonts, animations) that are not referenced in components or index.css. Clean up redundant plugin configurations or stale comments."
+        }
+      ]
+    }
+  ]
 }

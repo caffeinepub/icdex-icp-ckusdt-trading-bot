@@ -39,19 +39,30 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
-    cancelOneOrderTest(): Promise<void>;
+    cancelSingleOrder(orderId: bigint): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getActivityLog(count: bigint, page: bigint): Promise<Array<LogEntry>>;
+    getBalances(): Promise<{
+        icpBalance: bigint;
+        ckbtcBalance: bigint;
+    }>;
     getBotStatus(): Promise<boolean>;
     getConfig(): Promise<{
+        spreadPips: bigint;
+        orderSize: bigint;
         intervalSeconds: bigint;
-        spreadBps: bigint;
         numOrders: bigint;
     }>;
     getLastGrid(): Promise<Array<[string, bigint]>>;
     getOpenOrders(): Promise<Array<OrderEntry>>;
     getTradeHistory(): Promise<Array<OrderEntry>>;
     healthCheck(): Promise<boolean>;
-    pending(): Promise<Array<OrderEntry>>;
     startBot(): Promise<void>;
     stopBot(): Promise<void>;
+    updateConfig(newInterval: bigint, newSpread: bigint, newOrders: bigint, newOrderSize: bigint): Promise<void>;
 }
