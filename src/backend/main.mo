@@ -9,9 +9,6 @@ import Int "mo:core/Int";
 import Iter "mo:core/Iter";
 import Principal "mo:core/Principal";
 
-import Migration "migration";
-
-(with migration = Migration.run)
 actor self {
   type DepositAccountArgs = { owner : Principal };
   type DepositAccount = { owner : Principal; account : Blob };
@@ -72,7 +69,6 @@ actor self {
 
   let orderHistoryMap = Map.empty<Nat, OrderEntry>();
   let openOrderMap = Map.empty<Nat, OrderEntry>();
-
   let activityLog = Queue.empty<LogEntry>();
 
   type Ledger = actor {
@@ -113,11 +109,9 @@ actor self {
       eventType;
       message;
     };
-
     let toVarArray = activityLog.toVarArray();
     let logArray = toVarArray.toArray();
     activityLog.clear();
-
     let maxLogSize = 100;
     let prunedArray : [LogEntry] = if (logArray.size() >= maxLogSize) {
       if (logArray.size() > 0) {
@@ -128,11 +122,9 @@ actor self {
     } else {
       logArray;
     };
-
     for (log in prunedArray.values()) {
       activityLog.pushBack(log);
     };
-
     activityLog.pushBack(entry);
   };
 
@@ -221,27 +213,46 @@ actor self {
     orderSizeE8s * 1_000_000 / price;
   };
 
-  // Core grid trading loop with real reconciliation logic
+  // Core grid trading loop — level10 wrapped in try/catch, arrays guarded
   func tradingLoop() : async () {
     addLogEntry("trading_loop_start", "Starting new trading loop iteration");
     addLogEntry("fetch_best_bid", "Fetching current best bid price from ICDex");
     addLogEntry("fetch_best_ask", "Fetching current best ask price from ICDex");
 
-    let level10 = await icDex.level10();
+    // FIXED: wrap level10() in try/catch to avoid silent crash
+    let level10Result = try {
+      let data = await icDex.level10();
+      #ok(data);
+    } catch (e : Error) {
+      #err(e.message());
+    };
+
+    let level10 = switch (level10Result) {
+      case (#err(msg)) {
+        addLogEntry("level10_error", "Failed to fetch level10 from ICDex: " # msg);
+        return;
+      };
+      case (#ok(data)) { data };
+    };
+
     addLogEntry("fetched_level10", "Successfully fetched level10 data");
+
+    // FIXED: guard against empty arrays
+    if (level10.bids.size() == 0 or level10.asks.size() == 0) {
+      addLogEntry("level10_empty", "level10 returned empty bids or asks — skipping this iteration");
+      return;
+    };
 
     let bestBid = level10.bids[0].price;
     let bestAsk = level10.asks[0].price;
     let midPrice = (bestBid + bestAsk) / 2 : Nat;
     lastMidPrice := midPrice;
 
-    // Maintain grid symmetry
     let localNumOrders = numOrders;
     let ordersPerSide = if (localNumOrders % 2 == 0) { localNumOrders / 2 } else {
-      (localNumOrders + 1) / 2 // Round up for odd numbers
+      (localNumOrders + 1) / 2
     };
 
-    // Calculate price levels for each grid
     let buyGrid = Nat.range(0, ordersPerSide).map(
       func(i) {
         let offset = midPrice * (i + 1) * spreadPips / 10000;
@@ -270,28 +281,21 @@ actor self {
 
   func reconcileAndPlaceOrders(grid : [(Side, Nat)], price : Nat) : async () {
     addLogEntry("reconciliation_start", "Starting order reconciliation and placement process");
-
-    // Maintain max grid symmetry
     let ordersPerSide = numOrders / 2;
-
     if (ordersPerSide == 0 or ordersPerSide == 1) {
-      // Only place one order per side at the first grid level
       await placeSingleOrderPerSide(grid[0], price);
       await placeSingleOrderPerSide(grid[ordersPerSide], price);
     } else if (ordersPerSide == 2) {
-      // Place only two orders at the first two grid levels for each side
-      await placeFirstTwoOrdersPerSide(grid, 0, ordersPerSide, price); // Buy orders (first 2 orders)
-      await placeFirstTwoOrdersPerSide(grid, ordersPerSide, numOrders, price); // Sell orders (first 2 sell orders)
+      await placeFirstTwoOrdersPerSide(grid, 0, ordersPerSide, price);
+      await placeFirstTwoOrdersPerSide(grid, ordersPerSide, numOrders, price);
     } else {
       let startBuyRange = 0;
-      let endBuyRange = Nat.min(3, ordersPerSide); // Only place 3 buy orders
+      let endBuyRange = Nat.min(3, ordersPerSide);
       await placeOrdersInRange(grid, startBuyRange, endBuyRange, price);
-
       let startSellRange = ordersPerSide;
       let endSellRange = Nat.min(endBuyRange + ordersPerSide, grid.size());
       await placeOrdersInRange(grid, startSellRange, endSellRange, price);
     };
-
     await tryCancelRestOrders();
   };
 
@@ -308,10 +312,7 @@ actor self {
   };
 
   func placeFirstTwoOrdersPerSide(grid : [(Side, Nat)], startIndex : Nat, endIndex : Nat, price : Nat) : async () {
-    let range = Nat.range(
-      startIndex,
-      Nat.min(endIndex, grid.size()),
-    );
+    let range = Nat.range(startIndex, Nat.min(endIndex, grid.size()));
     for (i in range) {
       await placeSingleOrderPerSide(grid[i], price);
     };
@@ -325,7 +326,6 @@ actor self {
   };
 
   func placeOrdersInRange(grid : [(Side, Nat)], start : Nat, end : Nat, price : Nat) : async () {
-    // Place at most 3 orders in the given range
     let rangeEnd = Nat.min(start + 3, end);
     let range = Nat.range(start, rangeEnd);
     for (i in range) {
@@ -335,21 +335,18 @@ actor self {
 
   func placeOrderIfNotExists(level : (Side, Nat), _midPrice : Nat) : async () {
     let newOrderId = createOrderId();
-
     let price = level.1;
     let quantity = calculateOrderQuantity(price);
     if (quantity == 0) {
       addLogEntry("info", "Order quantity too small at current price: " # price.toText());
       return;
     };
-
     let orderArgs : OrderArgs = {
       price;
       quantity;
       side = level.0;
       orderType = #limit;
     };
-
     let currentTimestamp = Time.now();
     let entry = {
       orderId = newOrderId;
@@ -359,13 +356,11 @@ actor self {
       status = #open;
       timestamp = currentTimestamp;
     };
-
     let placementResult = await placeOrderWithRetry(orderArgs, 3);
     switch (placementResult) {
       case (#ok(_)) {
         openOrderMap.add(newOrderId, entry);
         orderHistoryMap.add(newOrderId, entry);
-
         let actionText = if (level.0 == #buy) { "Buy" } else { "Sell" };
         let actionType = if (level.0 == #buy) { "buy_order_created" } else { "sell_order_created" };
         addLogEntry(
@@ -377,17 +372,14 @@ actor self {
         let actionText = if (level.0 == #buy) { "Buy" } else { "Sell" };
         let actionType = if (level.0 == #buy) { "buy_order_creation_failed" } else { "sell_order_creation_failed" };
         addLogEntry(
-          actionType, // Log both successes and failures
+          actionType,
           actionText # " Order Failed at Price: " # price.toText() # ", Quantity: " # quantity.toText() # ", Error: " # err
         );
       };
     };
   };
 
-  func placeOrderWithRetry(
-    orderArgs : OrderArgs,
-    maxRetries : Nat,
-  ) : async { #ok : OrderId; #err : Text } {
+  func placeOrderWithRetry(orderArgs : OrderArgs, maxRetries : Nat) : async { #ok : OrderId; #err : Text } {
     var attempts = 0;
     var lastError : Text = "";
     while (attempts < maxRetries) {
@@ -422,10 +414,7 @@ actor self {
         };
         orderHistoryMap.add(order.orderId, cancelledEntry);
         clearOpenOrders();
-        addLogEntry(
-          "order_cancelled",
-          "Cancelled order with ID: " # order.orderId.toText(),
-        );
+        addLogEntry("order_cancelled", "Cancelled order with ID: " # order.orderId.toText());
       } catch (e : Error) {
         addLogEntry("cancel_orders_error", "Error cancelling open orders: " # e.message());
         return #err("Error cancelling open orders: " # e.message());
@@ -452,12 +441,8 @@ actor self {
           timestamp = cancelledTimestamp;
         };
         orderHistoryMap.add(orderId, cancelledEntry);
-
         openOrderMap.remove(orderId);
-        addLogEntry(
-          "order_cancelled",
-          "Cancelled order with ID: " # orderId.toText(),
-        );
+        addLogEntry("order_cancelled", "Cancelled order with ID: " # orderId.toText());
         #ok;
       } catch (e : Error) {
         addLogEntry("cancel_order_error", "Error cancelling order with ID " # orderId.toText() # ": " # e.message());
