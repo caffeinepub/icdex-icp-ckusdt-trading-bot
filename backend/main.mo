@@ -4,11 +4,26 @@ import Nat "mo:core/Nat";
 import Map "mo:core/Map";
 import Queue "mo:core/Queue";
 import Timer "mo:core/Timer";
-import Runtime "mo:core/Runtime";
 import Text "mo:core/Text";
 import Int "mo:core/Int";
+import Runtime "mo:core/Runtime";
+import Migration "migration";
+import Iter "mo:core/Iter";
+import Principal "mo:core/Principal";
 
+(with migration = Migration.run)
 actor {
+  type DepositAccountArgs = { owner : Principal };
+  type DepositAccount = { owner : Principal; account : Blob };
+
+  type ICDexExtended = actor {
+    placeOrder : shared OrderArgs -> async OrderId;
+    cancelOrder : shared { orderId : OrderId } -> async ();
+    getLevel10 : shared () -> async Level10;
+    ticker : shared () -> async ?Ticker;
+    getDepositAccount : shared DepositAccountArgs -> async DepositAccount;
+  };
+
   type Side = { #buy; #sell };
   type OrderType = { #limit; #market; #chase; #post_only };
   type OrderId = Nat;
@@ -60,13 +75,6 @@ actor {
 
   let activityLog = Queue.empty<LogEntry>();
 
-  type ICDex = actor {
-    placeOrder : shared OrderArgs -> async OrderId;
-    cancelOrder : shared { orderId : OrderId } -> async ();
-    getLevel10 : shared () -> async Level10;
-    ticker : shared () -> async ?Ticker;
-  };
-
   type Ledger = actor {
     account_balance : shared { account : Blob } -> async { e8s : Nat };
   };
@@ -75,7 +83,7 @@ actor {
     icrc1_balance_of : shared { account : Blob } -> async Nat;
   };
 
-  let icDex = actor "5u2c6-kyaaa-aaaar-qadiq-cai" : ICDex;
+  let icDex = actor "5u2c6-kyaaa-aaaar-qadiq-cai" : ICDexExtended;
   let icpLedger = actor "ryjl3-tyaaa-aaaaa-aaaba-cai" : Ledger;
   let ckbtcLedger = actor "qcg3w-tyaaa-aaaah-qakea-cai" : CkbtcLedger;
 
@@ -482,5 +490,9 @@ actor {
     let balances = { icpBalance = icpBalance.e8s; ckbtcBalance };
     lastBalances := ?balances; // Store the latest result
     balances;
+  };
+
+  public shared ({ caller }) func getDepositAddr() : async DepositAccount {
+    await icDex.getDepositAccount({ owner = Principal.fromText("r7inp-6aaaa-aaaaa-aaabq-cai") });
   };
 };

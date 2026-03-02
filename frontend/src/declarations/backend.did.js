@@ -14,6 +14,10 @@ export const LogEntry = IDL.Record({
   'timestamp' : Time,
   'eventType' : IDL.Text,
 });
+export const DepositAccount = IDL.Record({
+  'owner' : IDL.Principal,
+  'account' : IDL.Vec(IDL.Nat8),
+});
 export const OrderStatus = IDL.Variant({
   'cancelled' : IDL.Null,
   'open' : IDL.Null,
@@ -64,6 +68,7 @@ export const idlService = IDL.Service({
       ],
       ['query'],
     ),
+  'getDepositAddr' : IDL.Func([], [DepositAccount], []),
   'getLastGrid' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
@@ -85,6 +90,10 @@ export const idlFactory = ({ IDL }) => {
     'message' : IDL.Text,
     'timestamp' : Time,
     'eventType' : IDL.Text,
+  });
+  const DepositAccount = IDL.Record({
+    'owner' : IDL.Principal,
+    'account' : IDL.Vec(IDL.Nat8),
   });
   const OrderStatus = IDL.Variant({
     'cancelled' : IDL.Null,
@@ -136,6 +145,7 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
+    'getDepositAddr' : IDL.Func([], [DepositAccount], []),
     'getLastGrid' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],

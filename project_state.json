@@ -1,16 +1,21 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
+  "projectStateVersion": 5,
   "summary": "Grid trading bot on Internet Computer Protocol (ICP) using the ICP/ckBTC pair on ICDex. Bot canister: xeccu-3iaaa-aaaai-at4kq-cai. ICDex canister for ckBTC/ICP pair: 5u2c6-kyaaa-aaaar-qadiq-cai. Currently on version 46. Working on depositing ICP and ckBTC into the bot, and verifying dashboard shows ckBTC balance and ICDex errors in Activity Log.",
   "architectural_notes": [
     "Bot canister principal: xeccu-3iaaa-aaaai-at4kq-cai",
     "ICDex ckBTC/ICP canister: 5u2c6-kyaaa-aaaar-qadiq-cai",
     "ckBTC deposit subaccount (bot): bbcb5a11d7a3189d3b3eb54679a635fc68f19de779c1a1d1f021d4b839593700",
     "ckBTC uses ICRC-1; must be sent to correct ICDex subaccount via getDepositAccount, not directly to bot principal",
-    "ICP can be sent directly to bot principal: xeccu-3iaaa-aaaai-at4kq-cai"
+    "ICP can be sent directly to bot principal: xeccu-3iaaa-aaaai-at4kq-cai",
+    "ckBTC canister (Token0): mxzaz-hqaaa-aaaar-qaada-cai (ICRC-1, 8 decimals)",
+    "ICP canister (Token1): ryjl3-tyaaa-aaaaa-aaaba-cai (ICRC-1, 8 decimals)",
+    "ICDex Unit Size: 0.00001 ckBTC; Taker fee: 0.3%, Maker fee: 0%",
+    "Bot Account ID (ICP ledger): 6f04d36ffc3c4c39243d9900f9d50cd25d4e628f2f2879f31021c2efd9f2b1ef"
   ],
   "known_issues": [
-    "Repeated build failures (budget_exceeded) when attempting to add depositCkBTC backend function — builds consistently fail"
+    "Repeated build failures (budget_exceeded) when attempting to add depositCkBTC backend function — builds consistently fail",
+    "Repeated budget_exceeded/AI implementation errors when attempting to add getDepositAccount/depositCkBTC — chat context size may be contributing to build failures"
   ],
   "isFixRequest": false,
   "existing_features": [],
@@ -48,6 +53,14 @@
       "summary": "Audit all frontend source files (excluding immutable paths) for unused imports, unused state variables, dead components, duplicate logic, and inconsistent naming conventions. Remove or reconcile anything that is not referenced or is contradictory.",
       "reqIds": [
         "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Add a public query/update function `getDepositAddr` to the backend actor in `backend/main.mo` that performs an inter-canister call to `getDepositAccount` on canister `5u2c6-kyaaa-aaaar-qadiq-cai`, passing the bot canister's own principal as the argument, and returns the result. Do not change any other existing logic.",
+      "reqIds": [
+        "REQ-4"
       ],
       "status": "pending"
     }

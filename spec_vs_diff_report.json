@@ -1,28 +1,31 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-03-02T02:51:14.254Z",
-  "summary": "The diff shows modifications to only two files: backend/main.mo and project_state.json. REQ-1 (backend/main.mo cleanup) appears partially addressed, but REQ-2 (backend/migration.mo audit/simplification) and REQ-3 (frontend source file audit) show no evidence of implementation in the diff.",
+  "generatedAt": "2026-03-02T14:04:29.785Z",
+  "summary": "The diff modifies backend/main.mo to add ICDexExtended type with getDepositAccount, and updates backend/migration.mo. However, the diff is truncated and the actual `getDepositAddr` public function body in backend/main.mo is not visible in the truncated content. The migration.mo file was modified (shown as ADDED, suggesting it was rewritten), which may violate the constraint of not altering backend/migration.mo unless strictly necessary.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Audit backend/migration.mo for relevance. If it only resets lastMidPrice and that field no longer exists or the reset is no longer necessary, simplify or remove the file accordingly.",
-      "reason": "The diff shows no changes to backend/migration.mo. The file is neither modified nor removed, so the audit and cleanup of migration.mo has not been performed.",
+      "id": "REQ-4",
+      "requirement": "A public function named `getDepositAddr` must exist in `backend/main.mo`, call `getDepositAccount` on canister `5u2c6-kyaaa-aaaar-qadiq-cai`, pass `Principal.fromActor(this)` as the argument, and return the result.",
+      "reason": "The diff of backend/main.mo is truncated and does not show the actual `getDepositAddr` function body. While ICDexExtended type with getDepositAccount is defined and the icDex actor is bound to the correct canister, the public function `getDepositAddr` itself is not visible in the provided diff snippet.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "backend/migration.mo was added/rewritten with a full migration module including OldActor, NewActor types, and a run function that upgrades the icDex actor reference from ICDex to ICDexExtended.",
+      "reason": "The build request constraint states do not alter backend/migration.mo unless strictly necessary. The file was substantially rewritten, going well beyond minimal changes. This is a significant modification not explicitly requested by REQ-4.",
       "evidence": [
         "backend/migration.mo"
       ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Audit all frontend source files (excluding immutable paths) for unused imports, unused state variables, dead components, duplicate logic, and inconsistent naming conventions.",
-      "reason": "The diff contains no changes to any frontend source files. No frontend components, hooks, or useQueries.ts have been modified, so the frontend cleanup has not been performed.",
-      "evidence": []
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.82,
+  "confidence": 0.55,
   "changed_files": [
     "backend/main.mo",
+    "backend/migration.mo",
     "project_state.json"
   ]
 }

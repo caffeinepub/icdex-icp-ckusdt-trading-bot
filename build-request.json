@@ -1,77 +1,39 @@
 {
   "kind": "build_request",
-  "title": "Code review: fix inconsistencies and remove dead code",
-  "projectName": "ICDex Grid Bot",
-  "priority": "normal",
+  "title": "Add getDepositAddr backend function",
+  "projectName": "ICP Grid Bot",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "Audit backend/main.mo for unused variables, dead code, redundant imports, unreachable branches, and stale comments. Remove or clean up anything that is no longer needed without changing observable behaviour.",
+      "id": "REQ-4",
+      "text": "Add a public query/update function `getDepositAddr` to the backend actor in `backend/main.mo` that performs an inter-canister call to `getDepositAccount` on canister `5u2c6-kyaaa-aaaar-qadiq-cai`, passing the bot canister's own principal as the argument, and returns the result. Do not change any other existing logic.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-last"
+          "msg-recent"
         ],
         "quotes": [
-          "Revise o codigo... busque inconsistencies. Limpe dados desnecessários"
+          "Adiciona ao backend uma função pública getDepositAddr que chama getDepositAccount no canister 5u2c6-kyaaa-aaaar-qadiq-cai passando o principal do próprio canister. Não alteres mais nada."
         ]
       },
       "acceptanceCriteria": [
-        "No unused let/var bindings remain in main.mo",
-        "No dead or unreachable code blocks remain",
-        "Redundant imports are removed",
-        "Stale or misleading comments are removed or corrected",
-        "All existing public functions still compile and behave identically"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Audit backend/migration.mo for relevance. If it only resets lastMidPrice and that field no longer exists or the reset is no longer necessary, simplify or remove the file accordingly.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "Limpe dados desnecessários"
-        ]
-      },
-      "acceptanceCriteria": [
-        "migration.mo contains only logic that is still relevant to the current stable state shape",
-        "If migration.mo is empty or trivially a no-op it is reduced to a minimal stub"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Audit all frontend source files (excluding immutable paths) for unused imports, unused state variables, dead components, duplicate logic, and inconsistent naming conventions. Remove or reconcile anything that is not referenced or is contradictory.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "Revise o codigo... busque inconsistencies. Limpe dados desnecessários"
-        ]
-      },
-      "acceptanceCriteria": [
-        "No unused React imports or variables remain across components and hooks",
-        "No component or hook file is imported but never used",
-        "Naming conventions are consistent (camelCase for variables/functions, PascalCase for components)",
-        "No duplicate query keys or redundant fetch logic in useQueries.ts",
-        "All existing UI panels render correctly after cleanup"
+        "A public function named `getDepositAddr` exists in `backend/main.mo`.",
+        "The function calls `getDepositAccount` on canister `5u2c6-kyaaa-aaaar-qadiq-cai`.",
+        "The argument passed to `getDepositAccount` is the bot canister's own principal (obtained via `Principal.fromActor(this)` or equivalent).",
+        "The function returns the result from the inter-canister call.",
+        "No other existing functions, state variables, or logic in `backend/main.mo` are modified."
       ]
     }
   ],
   "constraints": [
-    "Do not change any public backend API signatures — existing query/update method names and parameter types must remain identical",
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
-    "Do not introduce new features — this is a cleanup pass only"
+    "Do not modify any existing backend functions or state.",
+    "Do not modify any frontend files.",
+    "Do not alter backend/migration.mo unless strictly necessary."
   ],
   "nonGoals": [
-    "Adding the depositCkBTC backend function (deferred due to repeated build failures)",
-    "Adding a deposit button on the dashboard",
-    "Changing visual design or layout",
-    "Modifying canister IDs or network configuration"
+    "Adding a frontend button or UI for this function.",
+    "Implementing depositCkBTC or any ckBTC transfer logic.",
+    "Auditing or cleaning up backend/frontend code."
   ],
   "imageRequirements": {
     "required": [],

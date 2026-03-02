@@ -1,56 +1,34 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-03-02T02:51:14.257Z",
+  "generatedAt": "2026-03-02T14:04:29.788Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
+    "total": 1,
     "implemented": 0,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "Audit backend/main.mo for unused variables, dead code, redundant imports, unreachable branches, and stale comments. Remove or clean up anything that is no longer needed without changing observable behaviour.",
+        "id": "REQ-4",
+        "summary": "Add a public query/update function `getDepositAddr` to the backend actor in `backend/main.mo` that performs an inter-canister call to `getDepositAccount` on canister `5u2c6-kyaaa-aaaar-qadiq-cai`, passing the bot canister's own principal as the argument, and returns the result. Do not change any other existing logic.",
         "status": "unknown",
         "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-2",
-        "summary": "Audit backend/migration.mo for relevance. If it only resets lastMidPrice and that field no longer exists or the reset is no longer necessary, simplify or remove the file accordingly.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Audit all frontend source files (excluding immutable paths) for unused imports, unused state variables, dead components, duplicate logic, and inconsistent naming conventions. Remove or reconcile anything that is not referenced or is contradictory.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/App.tsx",
-          "frontend/src/components/ActivityLogPanel.tsx",
-          "frontend/src/components/BalancePanel.tsx",
-          "frontend/src/components/BotControlPanel.tsx",
-          "frontend/src/components/ConfigurationPanel.tsx",
-          "frontend/src/components/GridPreviewTable.tsx",
-          "frontend/src/components/MarketDataPanel.tsx",
-          "frontend/src/components/OpenOrdersPanel.tsx",
-          "frontend/src/components/TradeHistoryPanel.tsx",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/index.css",
-          "frontend/tailwind.config.js"
-        ],
         "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-implementation-plan.json",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

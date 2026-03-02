@@ -89,6 +89,16 @@ export class ExternalBlob {
         return this;
     }
 }
+export type Time = bigint;
+export interface LogEntry {
+    message: string;
+    timestamp: Time;
+    eventType: string;
+}
+export interface DepositAccount {
+    owner: Principal;
+    account: Uint8Array;
+}
 export interface OrderEntry {
     status: OrderStatus;
     side: Side;
@@ -96,12 +106,6 @@ export interface OrderEntry {
     timestamp: Time;
     quantity: bigint;
     price: bigint;
-}
-export type Time = bigint;
-export interface LogEntry {
-    message: string;
-    timestamp: Time;
-    eventType: string;
 }
 export type OrderId = bigint;
 export enum OrderStatus {
@@ -140,6 +144,7 @@ export interface backendInterface {
         intervalSeconds: bigint;
         numOrders: bigint;
     }>;
+    getDepositAddr(): Promise<DepositAccount>;
     getLastGrid(): Promise<Array<[string, bigint]>>;
     getOpenOrders(): Promise<Array<OrderEntry>>;
     getTradeHistory(): Promise<Array<OrderEntry>>;
@@ -252,6 +257,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getConfig();
+            return result;
+        }
+    }
+    async getDepositAddr(): Promise<DepositAccount> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getDepositAddr();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getDepositAddr();
             return result;
         }
     }

@@ -10,6 +10,7 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface DepositAccount { 'owner' : Principal, 'account' : Uint8Array }
 export interface LogEntry {
   'message' : string,
   'timestamp' : Time,
@@ -52,6 +53,7 @@ export interface _SERVICE {
       'numOrders' : bigint,
     }
   >,
+  'getDepositAddr' : ActorMethod<[], DepositAccount>,
   'getLastGrid' : ActorMethod<[], Array<[string, bigint]>>,
   'getOpenOrders' : ActorMethod<[], Array<OrderEntry>>,
   'getTradeHistory' : ActorMethod<[], Array<OrderEntry>>,
