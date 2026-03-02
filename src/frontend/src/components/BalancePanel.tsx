@@ -1,15 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useBalances, useDepositCkBTC } from "@/hooks/useQueries";
+import { useBalances, useGetDepositAddr } from "@/hooks/useQueries";
 import {
   AlertCircle,
   AlertTriangle,
-  ArrowUpCircle,
   CheckCircle2,
+  Copy,
+  Info,
   Loader2,
   RefreshCw,
   Wallet,
 } from "lucide-react";
+import { useState } from "react";
+
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 /**
  * Format a bigint e8s value as ICP with 4 decimal places.
@@ -35,18 +43,30 @@ export function BalancePanel() {
     refetch,
     isFetching,
   } = useBalances();
-  const depositMutation = useDepositCkBTC();
+  const depositAddrMutation = useGetDepositAddr();
+  const [copiedField, setCopiedField] = useState<"account" | "owner" | null>(
+    null,
+  );
 
   const icpIsZero = balances ? balances.icpBalance === BigInt(0) : false;
   const ckbtcIsZero = balances ? balances.ckbtcBalance === BigInt(0) : false;
   const hasWarning = icpIsZero || ckbtcIsZero;
 
-  const ckbtcHasBalance = balances ? balances.ckbtcBalance > BigInt(0) : false;
-
-  const handleDeposit = () => {
-    depositMutation.reset();
-    depositMutation.mutate();
+  const handleGetDepositAddr = () => {
+    depositAddrMutation.reset();
+    depositAddrMutation.mutate();
   };
+
+  const handleCopy = (text: string, field: "account" | "owner") => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    });
+  };
+
+  const depositAddr = depositAddrMutation.data;
+  const accountHex = depositAddr ? toHex(depositAddr.account) : null;
+  const ownerText = depositAddr ? depositAddr.owner.toString() : null;
 
   return (
     <div className="terminal-card p-5 flex flex-col gap-4">
@@ -183,54 +203,114 @@ export function BalancePanel() {
             </div>
           )}
 
-          {/* Deposit ckBTC to ICDex button */}
+          {/* Get ICDex Deposit Address */}
           <div className="flex flex-col gap-2 pt-1 border-t border-border/30 mt-1">
             <Button
               variant="outline"
               size="sm"
-              onClick={handleDeposit}
-              disabled={depositMutation.isPending || !ckbtcHasBalance}
+              onClick={handleGetDepositAddr}
+              disabled={depositAddrMutation.isPending}
+              data-ocid="balance.deposit_addr.button"
               className="w-full font-mono text-xs gap-2 border-terminal-buy/40 text-terminal-buy hover:bg-terminal-buy/10 hover:text-terminal-buy hover:border-terminal-buy/60 disabled:opacity-50"
             >
-              {depositMutation.isPending ? (
+              {depositAddrMutation.isPending ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Depositing ckBTC…
+                  Fetching address…
                 </>
               ) : (
                 <>
-                  <ArrowUpCircle className="w-3.5 h-3.5" />
-                  Deposit ckBTC to ICDex
+                  <Info className="w-3.5 h-3.5" />
+                  Get ICDex Deposit Address
                 </>
               )}
             </Button>
 
-            {/* Success feedback */}
-            {depositMutation.isSuccess && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded bg-terminal-buy/5 border border-terminal-buy/20">
-                <CheckCircle2 className="w-3.5 h-3.5 text-terminal-buy shrink-0" />
-                <span className="text-[10px] font-mono text-terminal-buy">
-                  ckBTC deposited successfully to ICDex.
-                </span>
+            {/* Success: show deposit account details */}
+            {depositAddrMutation.isSuccess && accountHex && ownerText && (
+              <div
+                data-ocid="balance.deposit_addr.success_state"
+                className="flex flex-col gap-2 px-3 py-3 rounded bg-terminal-buy/5 border border-terminal-buy/20"
+              >
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-terminal-buy shrink-0" />
+                  <span className="text-[10px] font-mono font-semibold text-terminal-buy uppercase tracking-wider">
+                    ICDex Deposit Account
+                  </span>
+                </div>
+
+                {/* Account hex */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest">
+                    Account (hex)
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono text-foreground break-all leading-relaxed flex-1">
+                      {accountHex}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(accountHex, "account")}
+                      data-ocid="balance.deposit_addr.secondary_button"
+                      className="shrink-0 p-1 rounded hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-colors"
+                      title="Copy account hex"
+                    >
+                      {copiedField === "account" ? (
+                        <CheckCircle2 className="w-3 h-3 text-terminal-buy" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Owner principal */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest">
+                    Owner Principal
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono text-foreground break-all leading-relaxed flex-1">
+                      {ownerText}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(ownerText, "owner")}
+                      className="shrink-0 p-1 rounded hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-colors"
+                      title="Copy owner principal"
+                    >
+                      {copiedField === "owner" ? (
+                        <CheckCircle2 className="w-3 h-3 text-terminal-buy" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Instruction note */}
+                <div className="flex items-start gap-1.5 pt-1 border-t border-terminal-buy/20">
+                  <AlertTriangle className="w-3 h-3 text-terminal-warning shrink-0 mt-0.5" />
+                  <span className="text-[10px] font-mono text-terminal-warning leading-relaxed">
+                    Transfer ICP and ckBTC to this account to enable trading.
+                  </span>
+                </div>
               </div>
             )}
 
             {/* Error feedback */}
-            {depositMutation.isError && (
-              <div className="flex items-start gap-2 px-3 py-2 rounded bg-destructive/5 border border-destructive/20">
+            {depositAddrMutation.isError && (
+              <div
+                data-ocid="balance.deposit_addr.error_state"
+                className="flex items-start gap-2 px-3 py-2 rounded bg-destructive/5 border border-destructive/20"
+              >
                 <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
                 <span className="text-[10px] font-mono text-destructive leading-relaxed">
-                  {depositMutation.error instanceof Error
-                    ? depositMutation.error.message
-                    : "Failed to deposit ckBTC. Please try again."}
+                  {depositAddrMutation.error instanceof Error
+                    ? depositAddrMutation.error.message
+                    : "Failed to fetch deposit address. Please try again."}
                 </span>
               </div>
-            )}
-
-            {!ckbtcHasBalance && !isLoading && (
-              <span className="text-[10px] font-mono text-muted-foreground text-center opacity-60">
-                No ckBTC balance to deposit
-              </span>
             )}
           </div>
         </div>

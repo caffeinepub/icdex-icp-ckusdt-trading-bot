@@ -1,4 +1,5 @@
 import type { LogEntry, OrderEntry } from "@/backend";
+import type { Principal } from "@dfinity/principal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActor } from "./useActor";
 
@@ -53,9 +54,7 @@ interface TradingBotActor {
   cancelOneOrderTest(): Promise<void>;
   healthCheck(): Promise<boolean>;
   getBalances(): Promise<{ icpBalance: bigint; ckbtcBalance: bigint }>;
-  depositCkBTC(): Promise<
-    { __kind__: "ok"; ok: null } | { __kind__: "err"; err: string }
-  >;
+  getDepositAddr(): Promise<{ owner: Principal; account: Uint8Array }>;
 }
 
 const POLL_FAST = 5_000;
@@ -409,24 +408,15 @@ export function useBalances() {
   });
 }
 
-// ─── Deposit ckBTC to ICDex ───────────────────────────────────────────────────
+// ─── Get ICDex Deposit Address ────────────────────────────────────────────────
 
-export function useDepositCkBTC() {
+export function useGetDepositAddr() {
   const { actor } = useActor();
   const tradingActor = actor as unknown as TradingBotActor | null;
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
       if (!tradingActor) throw new Error("Actor not initialized");
-      const result = await tradingActor.depositCkBTC();
-      if (result.__kind__ === "err") {
-        throw new Error(result.err);
-      }
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["balances"] });
-      queryClient.invalidateQueries({ queryKey: ["activityLog"] });
+      return tradingActor.getDepositAddr();
     },
   });
 }
